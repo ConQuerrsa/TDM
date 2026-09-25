@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Team — TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h2>TYDAL Team</h2>
+        <p>Control who can access TYDAL Business Manager.</p>
+    </div>
+</div>
+
+
+<div class="dashboard-grid">
+
+    <div class="card">
+        <span class="card-label">Team Accounts</span>
+        <h2>{{ users|length }}</h2>
+        <p>Registered TDM users</p>
+    </div>
+
+    <div class="card">
+        <span class="card-label">Active</span>
+        <h2>{{ active_count }}</h2>
+        <p>Can currently sign in</p>
+    </div>
+
+    <div class="card">
+        <span class="card-label">Administrators</span>
+        <h2>{{ admin_count }}</h2>
+        <p>Can manage team access</p>
+    </div>
+
+</div>
+
+
+<div class="card" style="margin-top: 24px;">
+
+    <div class="section-header">
+        <div>
+            <h3>Add Partner Account</h3>
+            <p>Create secure access for a TYDAL partner.</p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('team.create') }}">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Partner name</label>
+                <input type="text" name="name" placeholder="Full name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Phone number</label>
+                <input type="text" name="phone" placeholder="e.g. 0712345678" required>
+            </div>
+
+            <div class="form-group">
+                <label>Temporary password</label>
+                <input type="password" name="password" placeholder="Minimum 8 characters" minlength="8" required>
+            </div>
+
+            <div class="form-group">
+                <label>Role</label>
+
+                <select name="role">
+                    <option value="partner" selected>Partner</option>
+                    <option value="admin">Administrator</option>
+                </select>
+            </div>
+
+        </div>
+
+        <div style="margin-top: 18px;">
+            <button type="submit" class="btn btn-primary">
+                Create Account
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+
+<div class="card" style="margin-top: 24px;">
+
+    <div class="section-header">
+        <div>
+            <h3>Team Access</h3>
+            <p>Manage existing TDM accounts.</p>
+        </div>
+    </div>
+
+    {% if users %}
+
+    <div class="table-responsive">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Partner</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Controls</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for user in users %}
+
+                <tr>
+
+                    <td>
+                        <strong>{{ user.name }}</strong>
+
+                        {% if user.id == current_user.id %}
+                        <div class="muted">Your account</div>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ user.phone }}</td>
+
+                    <td>
+                        <form method="POST" action="{{ url_for('team.change_role', user_id=user.id) }}">
+                            <select name="role" onchange="this.form.submit()" {% if user.id==current_user.id
+                                %}disabled{% endif %}>
+                                <option value="partner" {% if user.role=="partner" %}selected{% endif %}>
+                                    Partner
+                                </option>
+
+                                <option value="admin" {% if user.role=="admin" %}selected{% endif %}>
+                                    Administrator
+                                </option>
+                            </select>
+                        </form>
+                    </td>
+
+                    <td>
+                        {% if user.is_active %}
+                        <strong>Active</strong>
+                        {% else %}
+                        <span class="muted">Inactive</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ user.created_at.strftime("%d %b %Y") }}
+                    </td>
+
+                    <td>
+
+                        {% if user.id != current_user.id %}
+
+                        <form method="POST" action="{{ url_for('team.toggle_status', user_id=user.id) }}"
+                            style="display:inline-block; margin-bottom:8px;">
+                            <button type="submit" class="btn">
+                                {% if user.is_active %}
+                                Deactivate
+                                {% else %}
+                                Activate
+                                {% endif %}
+                            </button>
+                        </form>
+
+                        {% endif %}
+
+
+                        <form method="POST" action="{{ url_for('team.reset_password', user_id=user.id) }}"
+                            style="margin-top:8px;">
+
+                            <input type="password" name="new_password" minlength="8" placeholder="New password" required
+                                style="max-width:180px;">
+
+                            <button type="submit" class="btn">
+                                Reset
+                            </button>
+
+                        </form>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+    <p>No TDM accounts found.</p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

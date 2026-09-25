@@ -59,6 +59,13 @@
                     <span>Partners</span>
                 </a>
 
+                {% if current_user.role == "admin" %}
+                <a href="{{ url_for('team.index') }}" class="nav-item">
+                    <span>♟</span>
+                    <span>Team</span>
+                </a>
+                {% endif %}
+
                 <a href="{{ url_for('money.index') }}" class="nav-item">
                     <span>R</span>
                     <span>Money</span>
