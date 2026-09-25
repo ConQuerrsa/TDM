@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}TDM — TYDAL Business Manager{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <div class="app-shell">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+
+            <div class="brand">
+                <div class="brand-mark">T</div>
+
+                <div>
+                    <h1>TDM</h1>
+                    <span>TYDAL Business Manager</span>
+                </div>
+            </div>
+
+            <nav class="main-nav">
+
+                <a href="{{ url_for('main.home') }}" class="nav-item">
+                    <span>⌂</span>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="{{ url_for('sales.index') }}" class="nav-item">
+                    <span>▣</span>
+                    <span>Sales</span>
+                </a>
+
+                <a href="{{ url_for('inventory.index') }}" class="nav-item">
+                    <span>▤</span>
+                    <span>Inventory</span>
+                </a>
+
+                <a href="{{ url_for('purchases.index') }}" class="nav-item">
+                    <span>🛒</span>
+                    <span>Purchases</span>
+                </a>
+
+                <a href="{{ url_for('expenses.index') }}" class="nav-item">
+                    <span>−</span>
+                    <span>Expenses</span>
+                </a>
+
+
+                <a href="{{ url_for('partners.index') }}" class="nav-item">
+                    <span>♙</span>
+                    <span>Partners</span>
+                </a>
+
+                <a href="{{ url_for('money.index') }}" class="nav-item">
+                    <span>R</span>
+                    <span>Money</span>
+                </a>
+
+                <a href="{{ url_for('reports.index') }}" class="nav-item">
+                    <span>📊</span>
+                    <span>Reports</span>
+                </a>
+
+                <a href="#" class="nav-item">
+                    <span>≡</span>
+                    <span>Activity</span>
+                </a>
+
+                <a href="{{ url_for('setup.index') }}" class="nav-link">
+                    <span>⚙️</span>
+                    <span>Business Setup</span>
+                </a>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+
+                <a href="#" class="nav-item">
+                    <span>⚙</span>
+                    <span>Settings</span>
+                </a>
+
+                <a href="{{ url_for('auth.logout') }}" class="logout-link">
+                    Sign out
+                </a>
+
+            </div>
+
+        </aside>
+
+
+        <!-- Main area -->
+        <div class="main-area">
+
+            <header class="topbar">
+
+                <button class="menu-button" id="menuButton" type="button" aria-label="Open menu">
+                    ☰
+                </button>
+
+                <div class="topbar-title">
+                    <span>TDM</span>
+                </div>
+
+                <div class="user-menu">
+                    <div class="user-avatar">
+                        {{ current_user.name[0]|upper }}
+                    </div>
+
+                    <div class="user-info">
+                        <strong>{{ current_user.name }}</strong>
+                        <span>{{ current_user.role|capitalize }}</span>
+                    </div>
+                </div>
+
+            </header>
+
+
+            <main class="content">
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                    <div class="flash {{ category }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+
+            </main>
+
+        </div>
+
+    </div>
+
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+
+</html>

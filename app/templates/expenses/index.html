@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+
+{% block title %}Expenses — TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header expenses-page-header">
+
+    <div>
+        <h2>Expenses</h2>
+        <p>See where TYDAL's operating money is going.</p>
+    </div>
+
+    <button class="primary-button" type="button" onclick="openExpenseModal()" {% if not account_rows %}disabled{% endif
+        %}>
+        + Record Expense
+    </button>
+
+</div>
+
+
+<!-- SUMMARY -->
+
+<div class="expenses-summary-grid">
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Expenses Today
+        </div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(today_expenses) }}
+        </div>
+
+        <div class="stat-description">
+            Business operating costs today
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Recent Expenses
+        </div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(total_expenses) }}
+        </div>
+
+        <div class="stat-description">
+            Across the records shown below
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Transactions
+        </div>
+
+        <div class="stat-value">
+            {{ expenses|length }}
+        </div>
+
+        <div class="stat-description">
+            Expense records shown
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="expenses-layout">
+
+
+    <!-- EXPENSE HISTORY -->
+
+    <section class="expenses-section">
+
+        <div class="section-heading">
+
+            <div>
+                <h3>Expense history</h3>
+
+                <p>
+                    Business costs paid using TYDAL money.
+                </p>
+            </div>
+
+        </div>
+
+
+        {% if expenses %}
+
+        <div class="expense-list">
+
+            {% for expense in expenses %}
+
+            <div class="expense-row">
+
+                <div class="expense-main">
+
+                    <div class="expense-icon">
+                        −
+                    </div>
+
+
+                    <div>
+
+                        <strong>
+                            {{ expense.description }}
+                        </strong>
+
+                        <span>
+                            {{ expense.category }}
+                            ·
+                            {{ expense.money_account.name }}
+                            ·
+                            {{ expense.expense_date.strftime("%d %b %Y · %H:%M") }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="expense-amount">
+                    −R{{ "%.2f"|format(expense.amount) }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        {% else %}
+
+        <div class="empty-ledger">
+
+            <strong>
+                No expenses recorded yet.
+            </strong>
+
+            <span>
+                Airtime, transport, packaging, marketing
+                and other TYDAL operating costs will appear here.
+            </span>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- CATEGORY BREAKDOWN -->
+
+    <aside class="expense-category-card">
+
+        <div class="section-heading">
+
+            <div>
+                <h3>Where money went</h3>
+
+                <p>
+                    Expense categories.
+                </p>
+            </div>
+
+        </div>
+
+
+        {% if category_rows %}
+
+        <div class="category-list">
+
+            {% for category, amount in category_rows %}
+
+            <div class="category-row">
+
+                <span>
+                    {{ category }}
+                </span>
+
+                <strong>
+                    R{{ "%.2f"|format(amount) }}
+                </strong>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        {% else %}
+
+        <div class="category-empty">
+            Nothing to analyse yet.
+        </div>
+
+        {% endif %}
+
+
+        <div class="expense-rule-note">
+
+            <strong>What belongs here?</strong>
+
+            <p>
+                Only real TYDAL operating costs.
+                Partner withdrawals and stock purchases
+                are tracked separately.
+            </p>
+
+        </div>
+
+    </aside>
+
+</div>
+
+
+<!-- ======================================================
+     EXPENSE MODAL
+     ====================================================== -->
+
+<div class="tdm-modal" id="expenseModal">
+
+    <div class="tdm-modal-backdrop" onclick="closeExpenseModal()"></div>
+
+
+    <div class="tdm-modal-card">
+
+        <div class="tdm-modal-header">
+
+            <div>
+
+                <span class="modal-eyebrow">
+                    BUSINESS COST
+                </span>
+
+                <h3>Record Expense</h3>
+
+                <p>
+                    Record money TYDAL spent running the business.
+                </p>
+
+            </div>
+
+
+            <button class="modal-close" type="button" onclick="closeExpenseModal()">
+                ×
+            </button>
+
+        </div>
+
+
+        <form method="POST" action="{{ url_for('expenses.new_expense') }}">
+
+
+            <div class="form-group">
+
+                <label>
+                    What did TYDAL pay for?
+                </label>
+
+                <input type="text" name="description" maxlength="200" placeholder="e.g. Taxi fare to collect stock"
+                    required>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Category
+                </label>
+
+                <select name="category" required>
+
+                    <option value="">
+                        Choose category
+                    </option>
+
+                    <option value="Airtime & Data">
+                        Airtime & Data
+                    </option>
+
+                    <option value="Transport">
+                        Transport
+                    </option>
+
+                    <option value="Delivery">
+                        Delivery
+                    </option>
+
+                    <option value="Packaging">
+                        Packaging
+                    </option>
+
+                    <option value="Marketing">
+                        Marketing
+                    </option>
+
+                    <option value="Bank Fees">
+                        Bank Fees
+                    </option>
+
+                    <option value="Registration & Admin">
+                        Registration & Admin
+                    </option>
+
+                    <option value="Other">
+                        Other
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Amount
+                </label>
+
+                <div class="money-input">
+
+                    <span>R</span>
+
+                    <input type="number" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Paid from
+                </label>
+
+                <select name="money_account_id" id="expenseAccount" required>
+
+                    <option value="">
+                        Choose money location
+                    </option>
+
+                    {% for row in account_rows %}
+
+                    <option value="{{ row.account.id }}" data-balance="{{ row.balance }}">
+                        {{ row.account.name }}
+                        — R{{ "%.2f"|format(row.balance) }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small id="expenseAvailable">
+                    Select a location to see available money.
+                </small>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Notes
+                    <span class="optional-label">
+                        Optional
+                    </span>
+                </label>
+
+                <textarea name="notes" rows="3" placeholder="Any extra details about this expense"></textarea>
+
+            </div>
+
+
+            <div class="expense-modal-warning">
+
+                <strong>
+                    This will reduce TYDAL's money.
+                </strong>
+
+                <span>
+                    Use Partner Transactions instead if a partner
+                    personally took the money.
+                </span>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button type="button" class="secondary-button" onclick="closeExpenseModal()">
+                    Cancel
+                </button>
+
+                <button type="submit" class="primary-button">
+                    Record Expense
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    const expenseModal =
+        document.getElementById("expenseModal");
+
+    const expenseAccount =
+        document.getElementById("expenseAccount");
+
+    const expenseAvailable =
+        document.getElementById("expenseAvailable");
+
+
+    function openExpenseModal() {
+
+        expenseModal.classList.add("open");
+
+        document.body.classList.add("modal-open");
+
+    }
+
+
+    function closeExpenseModal() {
+
+        expenseModal.classList.remove("open");
+
+        document.body.classList.remove("modal-open");
+
+    }
+
+
+    if (expenseAccount) {
+
+        expenseAccount.addEventListener(
+            "change",
+            function () {
+
+                const selected =
+                    this.options[this.selectedIndex];
+
+                const balance =
+                    selected.dataset.balance;
+
+                if (balance !== undefined) {
+
+                    expenseAvailable.textContent =
+                        `Available: R${Number(balance).toFixed(2)}`;
+
+                } else {
+
+                    expenseAvailable.textContent =
+                        "Select a location to see available money.";
+
+                }
+
+            }
+        );
+
+    }
+
+
+    document.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (
+                event.key === "Escape" &&
+                expenseModal.classList.contains("open")
+            ) {
+
+                closeExpenseModal();
+
+            }
+
+        }
+    );
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Sales — TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header sales-page-header">
+
+    <div>
+        <h2>Sales</h2>
+        <p>Record and track everything TYDAL sells.</p>
+    </div>
+
+    <a href="{{ url_for('sales.new_sale') }}" class="primary-button">
+        + New Sale
+    </a>
+
+</div>
+
+
+<div class="sales-summary-grid">
+
+    <div class="stat-card">
+        <div class="stat-label">
+            Today's Revenue
+        </div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(today_revenue) }}
+        </div>
+
+        <div class="stat-description">
+            Completed sales today
+        </div>
+    </div>
+
+
+    <div class="stat-card">
+        <div class="stat-label">
+            Sales Today
+        </div>
+
+        <div class="stat-value">
+            {{ today_sale_count }}
+        </div>
+
+        <div class="stat-description">
+            Transactions recorded
+        </div>
+    </div>
+
+</div>
+
+
+<section class="sales-section">
+
+    <div class="section-heading">
+
+        <div>
+            <h3>Recent sales</h3>
+            <p>
+                Latest completed TYDAL transactions.
+            </p>
+        </div>
+
+    </div>
+
+
+    {% if recent_sales %}
+
+    <div class="tdm-table-wrapper">
+
+        <table class="tdm-table">
+
+            <thead>
+                <tr>
+                    <th>Sale</th>
+                    <th>Date</th>
+                    <th>Sold by</th>
+                    <th>Payment</th>
+                    <th>Money location</th>
+                    <th>Status</th>
+                    <th class="text-right">
+                        Total
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for sale in recent_sales %}
+
+                <tr>
+
+                    <td>
+                        <strong>
+                            {{ sale.sale_number }}
+                        </strong>
+                    </td>
+
+                    <td>
+                        {{ sale.sale_date.strftime("%d %b %Y · %H:%M") }}
+                    </td>
+
+                    <td>
+                        {{ sale.sold_by.name }}
+                    </td>
+
+                    <td>
+                        {{ sale.payment_method|replace("_", " ")|title }}
+                    </td>
+
+                    <td>
+                        {{ sale.money_account.name }}
+                    </td>
+
+                    <td>
+                        <span class="table-status">
+                            {{ sale.status|title }}
+                        </span>
+                    </td>
+
+                    <td class="text-right">
+                        <strong>
+                            R{{ "%.2f"|format(sale.total_amount) }}
+                        </strong>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+
+        <h4>No sales yet</h4>
+
+        <p>
+            When TYDAL makes a sale, record it here.
+            TDM will update money and stock automatically.
+        </p>
+
+        <a href="{{ url_for('sales.new_sale') }}" class="primary-button">
+            Record First Sale
+        </a>
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+{% endblock %}

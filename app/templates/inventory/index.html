@@ -1,0 +1,685 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory — TDM{% endblock %}
+
+{% block content %}
+
+
+<!-- ======================================================
+     HEADER
+     ====================================================== -->
+
+<div class="page-header inventory-page-header">
+
+    <div>
+        <h2>Inventory</h2>
+
+        <p>
+            See what TYDAL owns and exactly where the stock is.
+        </p>
+    </div>
+
+    <button class="primary-button" type="button" onclick="openStockModal()" {% if not product_rows or locations|length <
+        2 %} disabled {% endif %}>
+        Move Stock
+    </button>
+
+</div>
+
+
+<!-- ======================================================
+     INVENTORY SUMMARY
+     ====================================================== -->
+
+<div class="inventory-summary-grid">
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Units in Stock
+        </div>
+
+        <div class="stat-value">
+            {{ total_units }}
+        </div>
+
+        <div class="stat-description">
+            Across all active products
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Stock Cost Value
+        </div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(total_cost_value) }}
+        </div>
+
+        <div class="stat-description">
+            What current stock cost TYDAL
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Potential Sales
+        </div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(total_retail_value) }}
+        </div>
+
+        <div class="stat-description">
+            If current stock sells at listed prices
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Low Stock
+        </div>
+
+        <div class="stat-value">
+            {{ low_stock_count }}
+        </div>
+
+        <div class="stat-description">
+            Products at or below their warning level
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     PRODUCTS
+     ====================================================== -->
+
+<section class="inventory-section">
+
+    <div class="section-heading">
+
+        <div>
+            <h3>Current stock</h3>
+
+            <p>
+                Total stock and its physical location.
+            </p>
+        </div>
+
+        <span class="transaction-count">
+            {{ product_rows|length }} products
+        </span>
+
+    </div>
+
+
+    {% if product_rows %}
+
+    <div class="inventory-product-grid">
+
+        {% for row in product_rows %}
+
+        <article class="inventory-product-card">
+
+            <div class="inventory-product-header">
+
+                <div>
+
+                    <div class="inventory-product-title">
+
+                        <h4>
+                            {{ row.product.name }}
+                        </h4>
+
+                        {% if row.low_stock %}
+
+                        <span class="low-stock-badge">
+                            Low stock
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="inventory-product-meta">
+
+                        {% if row.product.brand %}
+                        <span>{{ row.product.brand }}</span>
+                        {% endif %}
+
+                        {% if row.product.category %}
+                        <span>{{ row.product.category }}</span>
+                        {% endif %}
+
+                        {% if row.product.size %}
+                        <span>Size {{ row.product.size }}</span>
+                        {% endif %}
+
+                        {% if row.product.color %}
+                        <span>{{ row.product.color }}</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="inventory-total-stock">
+
+                    <strong>
+                        {{ row.product.quantity }}
+                    </strong>
+
+                    <span>
+                        units
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            {% if row.stock_mismatch %}
+
+            <div class="stock-warning">
+
+                <strong>Stock needs attention</strong>
+
+                <span>
+                    Product total says
+                    {{ row.product.quantity }},
+                    but physical locations contain
+                    {{ row.holding_total }}.
+                </span>
+
+            </div>
+
+            {% endif %}
+
+
+            <div class="inventory-value-row">
+
+                <div>
+                    <span>Cost value</span>
+
+                    <strong>
+                        R{{ "%.2f"|format(row.cost_value) }}
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span>Potential sales</span>
+
+                    <strong>
+                        R{{ "%.2f"|format(row.retail_value) }}
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="stock-location-heading">
+                WHERE THE STOCK IS
+            </div>
+
+
+            {% if row.holdings %}
+
+            <div class="stock-location-list">
+
+                {% for holding_row in row.holdings %}
+
+                <div class="stock-location-row">
+
+                    <div>
+
+                        <span class="stock-location-dot"></span>
+
+                        <span>
+                            {{ holding_row.location.name }}
+                        </span>
+
+                    </div>
+
+                    <strong>
+                        {{ holding_row.holding.quantity }}
+                    </strong>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% else %}
+
+            <div class="inventory-no-location">
+                No physical stock location recorded.
+            </div>
+
+            {% endif %}
+
+        </article>
+
+        {% endfor %}
+
+    </div>
+
+
+    {% else %}
+
+    <div class="empty-state">
+
+        <div class="empty-state-icon">
+            ▤
+        </div>
+
+        <h4>No inventory yet</h4>
+
+        <p>
+            TYDAL products and opening stock will appear
+            here after they are added during Business Setup.
+        </p>
+
+        <a href="{{ url_for('setup.index') }}" class="primary-button">
+            Open Business Setup
+        </a>
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+<!-- ======================================================
+     RECENT STOCK MOVEMENT
+     ====================================================== -->
+
+<section class="inventory-section">
+
+    <div class="section-heading">
+
+        <div>
+            <h3>Recent stock movement</h3>
+
+            <p>
+                Permanent history of stock entering,
+                leaving or moving around TYDAL.
+            </p>
+        </div>
+
+    </div>
+
+
+    {% if recent_movements %}
+
+    <div class="transaction-list">
+
+        {% for movement in recent_movements %}
+
+        <div class="transaction-row">
+
+            <div class="transaction-main">
+
+                <div class="transaction-icon">
+
+                    {% if movement.movement_type == "sale" %}
+                    −
+                    {% elif movement.movement_type == "transfer" %}
+                    ↔
+                    {% elif movement.movement_type in ["purchase", "opening"] %}
+                    +
+                    {% else %}
+                    •
+                    {% endif %}
+
+                </div>
+
+
+                <div>
+
+                    <strong>
+                        {{ movement.product.name }}
+                    </strong>
+
+                    <span>
+
+                        {% if movement.from_location and movement.to_location %}
+
+                        {{ movement.from_location.name }}
+                        →
+                        {{ movement.to_location.name }}
+
+                        {% elif movement.from_location %}
+
+                        From {{ movement.from_location.name }}
+
+                        {% elif movement.to_location %}
+
+                        Into {{ movement.to_location.name }}
+
+                        {% else %}
+
+                        {{ movement.movement_type|replace("_", " ")|title }}
+
+                        {% endif %}
+
+                        ·
+
+                        {{ movement.movement_date.strftime("%d %b %Y · %H:%M") }}
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="stock-movement-quantity">
+
+                {% if movement.movement_type == "sale" %}
+                −
+                {% elif movement.movement_type in ["purchase", "opening"] %}
+                +
+                {% endif %}
+
+                {{ movement.quantity }}
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    {% else %}
+
+    <div class="empty-ledger">
+
+        <strong>
+            No stock movement recorded yet.
+        </strong>
+
+        <span>
+            Sales, purchases and internal stock transfers
+            will automatically appear here.
+        </span>
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+<!-- ======================================================
+     MOVE STOCK MODAL
+     ====================================================== -->
+
+<div class="tdm-modal" id="stockModal">
+
+    <div class="tdm-modal-backdrop" onclick="closeStockModal()"></div>
+
+
+    <div class="tdm-modal-card">
+
+        <div class="tdm-modal-header">
+
+            <div>
+
+                <span class="modal-eyebrow">
+                    INTERNAL STOCK MOVEMENT
+                </span>
+
+                <h3>Move Stock</h3>
+
+                <p>
+                    Move TYDAL stock between physical locations
+                    without changing total inventory.
+                </p>
+
+            </div>
+
+
+            <button class="modal-close" type="button" onclick="closeStockModal()">
+                ×
+            </button>
+
+        </div>
+
+
+        <form method="POST" action="{{ url_for('inventory.move_stock') }}">
+
+
+            <div class="form-group">
+
+                <label>
+                    Product
+                </label>
+
+                <select name="product_id" required>
+
+                    <option value="">
+                        Choose product
+                    </option>
+
+                    {% for row in product_rows %}
+
+                    {% if row.product.quantity > 0 %}
+
+                    <option value="{{ row.product.id }}">
+                        {{ row.product.name }}
+                        — {{ row.product.quantity }} total
+                    </option>
+
+                    {% endif %}
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    From
+                </label>
+
+                <select name="from_location_id" id="stockFromLocation" required>
+
+                    <option value="">
+                        Choose current location
+                    </option>
+
+                    {% for location in locations %}
+
+                    <option value="{{ location.id }}">
+                        {{ location.name }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div class="transfer-direction">
+                ↓
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    To
+                </label>
+
+                <select name="to_location_id" id="stockToLocation" required>
+
+                    <option value="">
+                        Choose destination
+                    </option>
+
+                    {% for location in locations %}
+
+                    <option value="{{ location.id }}">
+                        {{ location.name }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Quantity
+                </label>
+
+                <input type="number" name="quantity" min="1" step="1" value="1" required>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Notes
+                    <span class="optional-label">
+                        Optional
+                    </span>
+                </label>
+
+                <textarea name="notes" rows="3" placeholder="e.g. Gave stock to partner for weekend sales"></textarea>
+
+            </div>
+
+
+            <div class="transfer-info">
+
+                <strong>
+                    Total TYDAL stock will not change.
+                </strong>
+
+                <span>
+                    TDM will only change who or where
+                    the stock is physically held.
+                </span>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button type="button" class="secondary-button" onclick="closeStockModal()">
+                    Cancel
+                </button>
+
+                <button type="submit" class="primary-button">
+                    Move Stock
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    const stockModal =
+        document.getElementById("stockModal");
+
+    const stockFromLocation =
+        document.getElementById("stockFromLocation");
+
+    const stockToLocation =
+        document.getElementById("stockToLocation");
+
+
+    function openStockModal() {
+
+        stockModal.classList.add("open");
+
+        document.body.classList.add("modal-open");
+
+    }
+
+
+    function closeStockModal() {
+
+        stockModal.classList.remove("open");
+
+        document.body.classList.remove("modal-open");
+
+    }
+
+
+    if (stockFromLocation) {
+
+        stockFromLocation.addEventListener(
+            "change",
+            function () {
+
+                Array.from(
+                    stockToLocation.options
+                ).forEach(option => {
+
+                    option.disabled =
+                        option.value &&
+                        option.value === this.value;
+
+                });
+
+            }
+        );
+
+    }
+
+
+    document.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (
+                event.key === "Escape" &&
+                stockModal.classList.contains("open")
+            ) {
+
+                closeStockModal();
+
+            }
+
+        }
+    );
+
+</script>
+
+{% endblock %}

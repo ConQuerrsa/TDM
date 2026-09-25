@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}TDM — Reports{% endblock %}
+
+{% block content %}
+
+<style>
+.report-header{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:22px}
+.report-header h2{margin-bottom:5px}.report-header p{margin:0;opacity:.65}
+.report-filter{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.report-filter label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700}
+.report-filter input{padding:10px 12px;border:1px solid rgba(0,0,0,.12);border-radius:10px;background:transparent;color:inherit}
+.report-filter button{padding:11px 16px;border:0;border-radius:10px;background:#111;color:#fff;font-weight:700;cursor:pointer}
+.report-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:20px}
+.report-card,.report-panel{background:var(--card-bg,#fff);border:1px solid rgba(0,0,0,.08);border-radius:18px;padding:18px}
+.report-card span{display:block;font-size:12px;opacity:.62;margin-bottom:7px}.report-card strong{font-size:25px}.report-card small{display:block;margin-top:7px;opacity:.55}
+.report-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:20px 0}
+.report-panel h3{margin:0 0 4px}.report-panel>p{margin:0 0 18px;font-size:13px;opacity:.62}
+.report-row{padding:11px 0;border-bottom:1px solid rgba(0,0,0,.07)}.report-row:last-child{border-bottom:0}
+.report-row-head{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:7px}
+.report-track{height:8px;border-radius:99px;background:rgba(0,0,0,.07);overflow:hidden}.report-fill{height:100%;background:currentColor;opacity:.72}
+.report-table{width:100%;border-collapse:collapse}.report-table th,.report-table td{text-align:left;padding:11px 8px;border-bottom:1px solid rgba(0,0,0,.07);font-size:13px}.report-table th{font-size:11px;text-transform:uppercase;opacity:.55}.report-table td:last-child,.report-table th:last-child{text-align:right}
+.report-result{display:flex;justify-content:space-between;align-items:center;gap:18px}.report-result strong{font-size:30px}.report-note{font-size:12px;opacity:.58;line-height:1.5;margin-top:14px}
+.report-empty{font-size:13px;opacity:.6;padding:10px 0}
+@media(max-width:1000px){.report-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.report-header{align-items:flex-start;flex-direction:column}.report-two{grid-template-columns:1fr}}
+@media(max-width:520px){.report-grid{grid-template-columns:1fr}.report-filter{width:100%}.report-filter label{flex:1}.report-filter input{width:100%;box-sizing:border-box}}
+</style>
+
+<div class="report-header">
+    <div>
+        <h2>Business Reports</h2>
+        <p>See what TYDAL earned, spent and moved during a selected period.</p>
+    </div>
+
+    <form class="report-filter" method="get">
+        <label>
+            From
+            <input type="date" name="start" value="{{ start_date.strftime('%Y-%m-%d') }}">
+        </label>
+        <label>
+            To
+            <input type="date" name="end" value="{{ end_date.strftime('%Y-%m-%d') }}">
+        </label>
+        <button type="submit">Apply</button>
+    </form>
+</div>
+
+<div class="report-grid">
+    <div class="report-card">
+        <span>Sales Revenue</span>
+        <strong>R{{ "%.2f"|format(revenue) }}</strong>
+        <small>{{ sale_count }} sale{% if sale_count != 1 %}s{% endif %} · {{ units_sold }} units sold</small>
+    </div>
+
+    <div class="report-card">
+        <span>Gross Profit</span>
+        <strong>R{{ "%.2f"|format(gross_profit) }}</strong>
+        <small>{{ "%.1f"|format(gross_margin) }}% gross margin</small>
+    </div>
+
+    <div class="report-card">
+        <span>Operating Expenses</span>
+        <strong>R{{ "%.2f"|format(operating_expenses) }}</strong>
+        <small>Business running costs in this period</small>
+    </div>
+
+    <div class="report-card">
+        <span>Operating Result</span>
+        <strong>R{{ "%.2f"|format(operating_result) }}</strong>
+        <small>Gross profit minus operating expenses</small>
+    </div>
+</div>
+
+<div class="report-grid">
+    <div class="report-card">
+        <span>Cost of Sold Stock</span>
+        <strong>R{{ "%.2f"|format(cost_of_goods_sold) }}</strong>
+        <small>Recorded cost price of units actually sold</small>
+    </div>
+
+    <div class="report-card">
+        <span>Supplier Purchases</span>
+        <strong>R{{ "%.2f"|format(purchase_spend) }}</strong>
+        <small>Cash spent buying stock during this period</small>
+    </div>
+
+    <div class="report-card">
+        <span>Current Stock Value</span>
+        <strong>R{{ "%.2f"|format(stock_value) }}</strong>
+        <small>{{ stock_units }} units currently held</small>
+    </div>
+
+    <div class="report-card">
+        <span>Partner Position</span>
+        <strong>R{{ "%.2f"|format(partner_amount) }}</strong>
+        <small>{{ partner_label }}</small>
+    </div>
+</div>
+
+<div class="report-two">
+    <section class="report-panel">
+        <h3>Payment Methods</h3>
+        <p>How customers paid during this report period.</p>
+
+        {% if payment_breakdown %}
+            {% for row in payment_breakdown %}
+            <div class="report-row">
+                <div class="report-row-head">
+                    <strong>{{ row.label }}</strong>
+                    <span>R{{ "%.2f"|format(row.value) }} · {{ "%.0f"|format(row.percent) }}%</span>
+                </div>
+                <div class="report-track"><div class="report-fill" style="width:{{ row.percent }}%"></div></div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="report-empty">No sales in this period.</div>
+        {% endif %}
+    </section>
+
+    <section class="report-panel">
+        <h3>Expense Breakdown</h3>
+        <p>Where TYDAL's operating money went.</p>
+
+        {% if expense_breakdown %}
+            {% for row in expense_breakdown %}
+            <div class="report-row">
+                <div class="report-row-head">
+                    <strong>{{ row.label }}</strong>
+                    <span>R{{ "%.2f"|format(row.value) }} · {{ "%.0f"|format(row.percent) }}%</span>
+                </div>
+                <div class="report-track"><div class="report-fill" style="width:{{ row.percent }}%"></div></div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="report-empty">No operating expenses in this period.</div>
+        {% endif %}
+    </section>
+</div>
+
+<section class="report-panel">
+    <h3>Best-Selling Products</h3>
+    <p>Products ranked by sales revenue in the selected period.</p>
+
+    {% if top_products %}
+    <div style="overflow-x:auto">
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Units Sold</th>
+                    <th>Revenue</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in top_products %}
+                <tr>
+                    <td><strong>{{ row.name }}</strong></td>
+                    <td>{{ row.units }}</td>
+                    <td>R{{ "%.2f"|format(row.revenue) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div class="report-empty">No product sales in this period.</div>
+    {% endif %}
+</section>
+
+<section class="report-panel" style="margin-top:20px">
+    <div class="report-result">
+        <div>
+            <h3>Period Result</h3>
+            <p style="margin:5px 0 0;opacity:.62;font-size:13px">
+                Revenue minus sold-stock cost minus operating expenses.
+            </p>
+        </div>
+        <strong>R{{ "%.2f"|format(operating_result) }}</strong>
+    </div>
+
+    <div class="report-note">
+        Supplier purchases are shown separately and are not deducted again from this result.
+        Stock purchases turn cash into inventory; the cost enters the result when those units are sold.
+        Current stock value and partner position are current balances, not limited to the selected report dates.
+    </div>
+</section>
+
+{% endblock %}

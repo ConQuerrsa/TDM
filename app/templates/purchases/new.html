@@ -1,0 +1,694 @@
+{% extends "base.html" %}
+
+{% block title %}New Purchase | TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>New Purchase</h1>
+
+        <p>
+            Record stock bought from a supplier.
+        </p>
+    </div>
+
+    <a href="{{ url_for('purchases.index') }}" class="secondary-button">
+        ← Purchases
+    </a>
+
+</div>
+
+
+<form method="POST" action="{{ url_for('purchases.new') }}" id="purchaseForm" class="purchase-form">
+
+
+    <!-- ==================================================
+         ORDER DETAILS
+         ================================================== -->
+
+    <section class="form-card">
+
+        <div class="section-heading">
+
+            <div>
+                <h3>Order Details</h3>
+
+                <p>
+                    Who supplied the stock and where it arrived.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="supplier">
+                    Supplier
+                </label>
+
+                <input type="text" id="supplier" name="supplier" placeholder="e.g. Alibaba" required>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="moneyAccount">
+                    Paid From
+                </label>
+
+                <select id="moneyAccount" name="money_account_id" required>
+
+                    <option value="">
+                        Choose money location
+                    </option>
+
+                    {% for row in account_rows %}
+
+                    <option value="{{ row.account.id }}" data-balance="{{ row.balance }}">
+                        {{ row.account.name }}
+                        — R{{ "%.2f"|format(row.balance) }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small>
+                    This is where TYDAL's money will leave from.
+                </small>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="stockLocation">
+                    Stock Received At
+                </label>
+
+                <select id="stockLocation" name="stock_location_id" required>
+
+                    <option value="">
+                        Choose stock location
+                    </option>
+
+                    {% for location in locations %}
+
+                    <option value="{{ location.id }}">
+                        {{ location.name }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small>
+                    Where the physical stock is being kept.
+                </small>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         PRODUCTS
+         ================================================== -->
+
+    <section class="form-card">
+
+        <div class="section-heading">
+
+            <div>
+                <h3>Products</h3>
+
+                <p>
+                    Add everything included in this supplier order.
+                </p>
+            </div>
+
+            <button type="button" class="secondary-button" id="addPurchaseItem">
+                + Add Product
+            </button>
+
+        </div>
+
+
+        <div id="purchaseItems">
+
+            <div class="purchase-item-editor">
+
+                <div class="form-group purchase-product">
+
+                    <label>
+                        Product
+                    </label>
+
+                    <select name="product_id[]" class="product-select" required>
+
+                        <option value="">
+                            Choose product
+                        </option>
+
+                        <option value="__new__">
+                            ＋ Add new product
+                        </option>
+
+                        {% for product in products %}
+
+                        <option value="{{ product.id }}">
+                            {{ product.name }}
+                            {% if product.brand %}
+                            — {{ product.brand }}
+                            {% endif %}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+                <div class="new-product-fields" hidden>
+
+                    <div class="new-product-grid">
+
+                        <div class="form-group">
+                            <label>Product Name</label>
+                            <input type="text" name="new_product_name[]" placeholder="e.g. Quiksilver Boardshorts">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Brand</label>
+                            <input type="text" name="new_product_brand[]" placeholder="e.g. Quiksilver">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Category</label>
+                            <input type="text" name="new_product_category[]" placeholder="e.g. Shorts">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Size / Variant</label>
+                            <input type="text" name="new_product_size[]" placeholder="e.g. 32">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Colour</label>
+                            <input type="text" name="new_product_color[]" placeholder="e.g. Black">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Selling Price</label>
+                            <input type="number" name="new_product_selling_price[]" min="0" step="0.01"
+                                placeholder="0.00">
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>
+                        Quantity
+                    </label>
+
+                    <input type="number" name="quantity[]" class="purchase-quantity" min="1" value="1" required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Unit Cost
+                    </label>
+
+                    <input type="number" name="unit_cost[]" class="purchase-cost" min="0" step="0.01" placeholder="0.00"
+                        required>
+
+                </div>
+
+
+                <div class="purchase-line-total">
+
+                    <span>Line total</span>
+
+                    <strong class="line-total">
+                        R0.00
+                    </strong>
+
+                </div>
+
+
+                <button type="button" class="purchase-remove-item" title="Remove product" disabled>
+                    ×
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         NOTES
+         ================================================== -->
+
+    <section class="form-card">
+
+        <div class="form-group">
+
+            <label for="purchaseNotes">
+                Notes
+            </label>
+
+            <textarea id="purchaseNotes" name="notes" rows="3"
+                placeholder="Shipping details, order reference, extra information..."></textarea>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         TOTAL
+         ================================================== -->
+
+    <div class="purchase-checkout">
+
+        <div>
+
+            <span>Purchase Total</span>
+
+            <strong id="purchaseTotal">
+                R0.00
+            </strong>
+
+            <small id="purchaseBalanceMessage">
+                Choose a payment account.
+            </small>
+
+        </div>
+
+
+        <button type="submit" class="primary-button purchase-submit">
+            Record Purchase
+        </button>
+
+    </div>
+
+</form>
+
+
+<!-- ======================================================
+     PRODUCT ROW TEMPLATE
+     ====================================================== -->
+
+<template id="purchaseItemTemplate">
+
+    <div class="purchase-item-editor">
+
+        <div class="form-group purchase-product">
+
+            <label>
+                Product
+            </label>
+
+            <select name="product_id[]" class="product-select" required>
+
+                <option value="">
+                    Choose product
+                </option>
+
+                <option value="__new__">
+                    ＋ Add new product
+                </option>
+
+                {% for product in products %}
+
+                <option value="{{ product.id }}">
+                    {{ product.name }}
+                    {% if product.brand %}
+                    — {{ product.brand }}
+                    {% endif %}
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+        <div class="new-product-fields" hidden>
+
+            <div class="new-product-grid">
+
+                <div class="form-group">
+                    <label>Product Name</label>
+                    <input type="text" name="new_product_name[]" placeholder="e.g. Quiksilver Boardshorts">
+                </div>
+
+                <div class="form-group">
+                    <label>Brand</label>
+                    <input type="text" name="new_product_brand[]" placeholder="e.g. Quiksilver">
+                </div>
+
+                <div class="form-group">
+                    <label>Category</label>
+                    <input type="text" name="new_product_category[]" placeholder="e.g. Shorts">
+                </div>
+
+                <div class="form-group">
+                    <label>Size / Variant</label>
+                    <input type="text" name="new_product_size[]" placeholder="e.g. 32">
+                </div>
+
+                <div class="form-group">
+                    <label>Colour</label>
+                    <input type="text" name="new_product_color[]" placeholder="e.g. Black">
+                </div>
+
+                <div class="form-group">
+                    <label>Selling Price</label>
+                    <input type="number" name="new_product_selling_price[]" min="0" step="0.01" placeholder="0.00">
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>
+                Quantity
+            </label>
+
+            <input type="number" name="quantity[]" class="purchase-quantity" min="1" value="1" required>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                Unit Cost
+            </label>
+
+            <input type="number" name="unit_cost[]" class="purchase-cost" min="0" step="0.01" placeholder="0.00"
+                required>
+
+        </div>
+
+
+        <div class="purchase-line-total">
+
+            <span>Line total</span>
+
+            <strong class="line-total">
+                R0.00
+            </strong>
+
+        </div>
+
+
+        <button type="button" class="purchase-remove-item" title="Remove product">
+            ×
+        </button>
+
+    </div>
+
+</template>
+
+
+<script>
+
+    const itemsContainer =
+        document.getElementById("purchaseItems");
+
+    const addItemButton =
+        document.getElementById("addPurchaseItem");
+
+    const itemTemplate =
+        document.getElementById("purchaseItemTemplate");
+
+    const purchaseTotal =
+        document.getElementById("purchaseTotal");
+
+    const moneyAccount =
+        document.getElementById("moneyAccount");
+
+    const balanceMessage =
+        document.getElementById("purchaseBalanceMessage");
+
+
+    function calculatePurchaseTotal() {
+
+        let total = 0;
+
+        const rows =
+            itemsContainer.querySelectorAll(
+                ".purchase-item-editor"
+            );
+
+
+        rows.forEach(row => {
+
+            const quantity =
+                parseFloat(
+                    row.querySelector(
+                        ".purchase-quantity"
+                    ).value
+                ) || 0;
+
+            const cost =
+                parseFloat(
+                    row.querySelector(
+                        ".purchase-cost"
+                    ).value
+                ) || 0;
+
+            const lineTotal =
+                quantity * cost;
+
+            row.querySelector(
+                ".line-total"
+            ).textContent =
+                "R" + lineTotal.toFixed(2);
+
+            total += lineTotal;
+
+        });
+
+
+        purchaseTotal.textContent =
+            "R" + total.toFixed(2);
+
+
+        updateBalanceMessage(total);
+
+    }
+
+
+    function updateBalanceMessage(total) {
+
+        const selectedOption =
+            moneyAccount.options[
+            moneyAccount.selectedIndex
+            ];
+
+
+        if (
+            !selectedOption ||
+            !selectedOption.value
+        ) {
+
+            balanceMessage.textContent =
+                "Choose a payment account.";
+
+            return;
+
+        }
+
+
+        const balance =
+            parseFloat(
+                selectedOption.dataset.balance
+            ) || 0;
+
+
+        if (total > balance) {
+
+            balanceMessage.textContent =
+                "Not enough funds. Available: R" +
+                balance.toFixed(2);
+
+        } else {
+
+            const remaining =
+                balance - total;
+
+            balanceMessage.textContent =
+                "Balance after purchase: R" +
+                remaining.toFixed(2);
+
+        }
+
+    }
+
+
+    function updateRemoveButtons() {
+
+        const rows =
+            itemsContainer.querySelectorAll(
+                ".purchase-item-editor"
+            );
+
+
+        rows.forEach(row => {
+
+            const button =
+                row.querySelector(
+                    ".purchase-remove-item"
+                );
+
+            button.disabled =
+                rows.length === 1;
+
+        });
+
+    }
+
+
+    addItemButton.addEventListener(
+        "click",
+        () => {
+
+            const fragment =
+                itemTemplate.content.cloneNode(true);
+
+            itemsContainer.appendChild(
+                fragment
+            );
+
+            updateRemoveButtons();
+            calculatePurchaseTotal();
+
+        }
+    );
+
+
+    itemsContainer.addEventListener(
+        "input",
+        calculatePurchaseTotal
+    );
+
+
+    itemsContainer.addEventListener(
+        "change",
+        event => {
+
+            // Show/hide new product fields
+            if (event.target.classList.contains("product-select")) {
+
+                const row =
+                    event.target.closest(".purchase-item-editor");
+
+                const newProductFields =
+                    row.querySelector(".new-product-fields");
+
+                const newProductInputs =
+                    newProductFields.querySelectorAll("input");
+
+                const isNewProduct =
+                    event.target.value === "__new__";
+
+
+                newProductFields.hidden = !isNewProduct;
+
+
+                // Product name and selling price are required
+                // only when creating a new product.
+                const nameInput =
+                    newProductFields.querySelector(
+                        '[name="new_product_name[]"]'
+                    );
+
+                const sellingPriceInput =
+                    newProductFields.querySelector(
+                        '[name="new_product_selling_price[]"]'
+                    );
+
+                if (nameInput) {
+                    nameInput.required = isNewProduct;
+                }
+
+                if (sellingPriceInput) {
+                    sellingPriceInput.required = isNewProduct;
+                }
+
+
+                // Clear fields if user changes back
+                // to an existing product.
+                if (!isNewProduct) {
+
+                    newProductInputs.forEach(input => {
+                        input.value = "";
+                    });
+
+                }
+            }
+
+
+            calculatePurchaseTotal();
+        }
+    );
+
+
+    itemsContainer.addEventListener(
+        "click",
+        event => {
+
+            const button =
+                event.target.closest(
+                    ".purchase-remove-item"
+                );
+
+
+            if (!button || button.disabled) {
+                return;
+            }
+
+
+            button.closest(
+                ".purchase-item-editor"
+            ).remove();
+
+
+            updateRemoveButtons();
+            calculatePurchaseTotal();
+
+        }
+    );
+
+
+    moneyAccount.addEventListener(
+        "change",
+        calculatePurchaseTotal
+    );
+
+
+    updateRemoveButtons();
+    calculatePurchaseTotal();
+
+</script>
+
+{% endblock %}

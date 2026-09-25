@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}New Sale — TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <a href="{{ url_for('sales.index') }}" class="back-link">
+            ← Sales
+        </a>
+
+        <h2>Record Sale</h2>
+
+        <p>
+            Record what was sold, where the stock came from,
+            and where TYDAL received the money.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="sale-form-layout">
+
+    <section class="sale-form-card">
+
+        <form method="POST">
+
+            <div class="form-group">
+
+                <label for="product">
+                    Product
+                </label>
+
+                <select id="product" name="product_id" required>
+
+                    <option value="">
+                        Choose product
+                    </option>
+
+                    {% for product in products %}
+
+                    <option value="{{ product.id }}" data-price="{{ product.selling_price }}">
+                        {{ product.name }}
+                        {% if product.brand %}
+                        — {{ product.brand }}
+                        {% endif %}
+                        {% if product.size %}
+                        · {{ product.size }}
+                        {% endif %}
+                        ({{ product.quantity }} available)
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="stockLocation">
+                    Stock came from
+                </label>
+
+                <select id="stockLocation" name="stock_location_id" required>
+
+                    <option value="">
+                        Choose stock location
+                    </option>
+
+                    {% for location in stock_locations %}
+
+                    <option value="{{ location.id }}">
+                        {{ location.name }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small>
+                    TDM will verify that this product actually
+                    exists at the selected location.
+                </small>
+
+            </div>
+
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label for="quantity">
+                        Quantity
+                    </label>
+
+                    <input type="number" id="quantity" name="quantity" value="1" min="1" required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="unitPrice">
+                        Selling price each
+                    </label>
+
+                    <div class="money-input">
+
+                        <span>R</span>
+
+                        <input type="number" id="unitPrice" name="unit_price" min="0.01" step="0.01" placeholder="0.00"
+                            required>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="sale-total-preview">
+
+                <span>Sale total</span>
+
+                <strong id="saleTotal">
+                    R0.00
+                </strong>
+
+            </div>
+
+
+            <hr class="form-divider">
+
+
+            <div class="form-group">
+
+                <label for="paymentMethod">
+                    How did the customer pay?
+                </label>
+
+                <select id="paymentMethod" name="payment_method" required>
+
+                    <option value="">
+                        Choose payment method
+                    </option>
+
+                    <option value="cash">
+                        Cash
+                    </option>
+
+                    <option value="eft">
+                        EFT / Bank Transfer
+                    </option>
+
+                    <option value="cash_send">
+                        Cash Send
+                    </option>
+
+                    <option value="other">
+                        Other
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="moneyAccount">
+                    Where is the money now?
+                </label>
+
+                <select id="moneyAccount" name="money_account_id" required>
+
+                    <option value="">
+                        Choose money location
+                    </option>
+
+                    {% for account in money_accounts %}
+
+                    <option value="{{ account.id }}">
+                        {{ account.name }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small>
+                    This tells TDM where TYDAL's money
+                    physically exists after the sale.
+                </small>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="notes">
+                    Notes
+                    <span class="optional-label">
+                        Optional
+                    </span>
+                </label>
+
+                <textarea id="notes" name="notes" rows="3"
+                    placeholder="Customer details, discount reason, delivery note, etc."></textarea>
+
+            </div>
+
+
+            <div class="sale-form-actions">
+
+                <a href="{{ url_for('sales.index') }}" class="secondary-button">
+                    Cancel
+                </a>
+
+                <button type="submit" class="primary-button">
+                    Complete Sale
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+    <aside class="sale-help-card">
+
+        <span class="modal-eyebrow">
+            WHAT TDM WILL DO
+        </span>
+
+        <h3>One action. Four updates.</h3>
+
+        <div class="sale-flow-item">
+            <strong>01</strong>
+            <span>Record the sale</span>
+        </div>
+
+        <div class="sale-flow-item">
+            <strong>02</strong>
+            <span>Reduce the correct physical stock</span>
+        </div>
+
+        <div class="sale-flow-item">
+            <strong>03</strong>
+            <span>Add the money to its real location</span>
+        </div>
+
+        <div class="sale-flow-item">
+            <strong>04</strong>
+            <span>Write everything into TYDAL's history</span>
+        </div>
+
+    </aside>
+
+</div>
+
+
+<script>
+
+    const productSelect =
+        document.getElementById("product");
+
+    const quantityInput =
+        document.getElementById("quantity");
+
+    const priceInput =
+        document.getElementById("unitPrice");
+
+    const saleTotal =
+        document.getElementById("saleTotal");
+
+
+    function updateSaleTotal() {
+
+        const quantity =
+            Number(quantityInput.value || 0);
+
+        const price =
+            Number(priceInput.value || 0);
+
+        const total =
+            quantity * price;
+
+        saleTotal.textContent =
+            `R${total.toFixed(2)}`;
+    }
+
+
+    productSelect.addEventListener(
+        "change",
+        function () {
+
+            const selected =
+                this.options[this.selectedIndex];
+
+            const price =
+                selected.dataset.price;
+
+            if (price !== undefined) {
+                priceInput.value =
+                    Number(price).toFixed(2);
+            }
+
+            updateSaleTotal();
+        }
+    );
+
+
+    quantityInput.addEventListener(
+        "input",
+        updateSaleTotal
+    );
+
+
+    priceInput.addEventListener(
+        "input",
+        updateSaleTotal
+    );
+
+</script>
+
+{% endblock %}

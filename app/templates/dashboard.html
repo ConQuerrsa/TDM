@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}TDM — Dashboard{% endblock %}
+
+{% block content %}
+
+<style>
+.dashboard-secondary-grid,.tdm-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:22px 0}
+.tdm-chart-grid{grid-template-columns:1.4fr 1fr}
+.dashboard-panel,.tdm-chart-panel{background:var(--card-bg,#fff);border:1px solid rgba(0,0,0,.08);border-radius:18px;padding:20px}
+.dashboard-wide-panel{margin:22px 0}
+.dashboard-panel-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
+.dashboard-panel-header h3,.tdm-chart-title h3{margin:0 0 4px}
+.dashboard-panel-header p,.tdm-chart-title p{margin:0;opacity:.65;font-size:13px}
+.dashboard-panel-header a{white-space:nowrap;font-size:13px}
+.dashboard-list{display:grid}
+.dashboard-list-row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid rgba(0,0,0,.07)}
+.dashboard-list-row:last-child{border-bottom:0}
+.dashboard-list-row>div{display:flex;flex-direction:column;gap:3px}
+.dashboard-list-row span,.dashboard-empty{font-size:13px;opacity:.65}
+.partner-position-display{display:flex;flex-direction:column;gap:5px;margin:18px 0}
+.partner-position-display span{font-size:13px;opacity:.65}
+.partner-position-display strong{font-size:28px}
+.dashboard-status-good,.dashboard-status-info,.dashboard-status-warning{padding:11px 13px;border-radius:10px;background:rgba(0,0,0,.05);font-size:13px}
+.low-stock-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.low-stock-item{display:flex;justify-content:space-between;align-items:center;gap:14px;border:1px solid rgba(0,0,0,.07);border-radius:13px;padding:14px}
+.low-stock-item>div:first-child{display:flex;flex-direction:column;gap:3px}
+.low-stock-item span{font-size:12px;opacity:.6}
+.low-stock-count{font-size:22px;font-weight:700;text-align:right}
+.low-stock-count span{display:block;font-size:10px;font-weight:400}
+.tdm-chart-title{margin-bottom:18px}
+.sales-bars{min-height:230px;display:flex;align-items:end;gap:10px;padding-top:20px}
+.sales-bar-column{flex:1;min-width:0;text-align:center}
+.sales-bar-value{font-size:11px;margin-bottom:7px;white-space:nowrap}
+.sales-bar-track{height:160px;display:flex;align-items:end;justify-content:center}
+.sales-bar{width:min(36px,70%);min-height:3px;background:currentColor;border-radius:8px 8px 3px 3px;opacity:.78}
+.sales-bar-day{margin-top:8px;font-size:12px;font-weight:700}
+.sales-bar-date{margin-top:2px;font-size:10px;opacity:.55}
+.breakdown-list{display:grid;gap:16px}
+.breakdown-row-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:7px;font-size:13px}
+.breakdown-track{height:9px;border-radius:99px;background:rgba(0,0,0,.07);overflow:hidden}
+.breakdown-fill{height:100%;background:currentColor;border-radius:inherit;opacity:.75}
+@media(max-width:900px){.tdm-chart-grid,.dashboard-secondary-grid,.low-stock-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.tdm-chart-panel,.dashboard-panel{padding:16px}.sales-bars{gap:4px}.sales-bar-value{font-size:9px}.dashboard-panel-header{flex-direction:column}}
+</style>
+
+<div class="page-header dashboard-header">
+    <div>
+        <h2>TYDAL Dashboard</h2>
+        <p>Welcome back, {{ current_user.name.split()[0] }}. Here's where the business stands.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="stat-card">
+        <div class="stat-label">Today's Sales</div>
+        <div class="stat-value">R{{ "%.2f"|format(today_sales_total) }}</div>
+        <div class="stat-description">{% if today_sales_count == 0 %}No sales recorded today{% elif today_sales_count == 1 %}1 sale recorded today{% else %}{{ today_sales_count }} sales recorded today{% endif %}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">This Week</div>
+        <div class="stat-value">R{{ "%.2f"|format(weekly_revenue) }}</div>
+        <div class="stat-description">Revenue since Monday</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">TYDAL Money</div>
+        <div class="stat-value">R{{ "%.2f"|format(total_business_money) }}</div>
+        <div class="stat-description">Across all active money locations</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Stock Value</div>
+        <div class="stat-value">R{{ "%.2f"|format(stock_value) }}</div>
+        <div class="stat-description">{{ total_stock_units }} unit{% if total_stock_units != 1 %}s{% endif %} currently in stock</div>
+    </div>
+</div>
+
+<div class="tdm-chart-grid">
+    <section class="tdm-chart-panel">
+        <div class="tdm-chart-title"><h3>7-Day Sales</h3><p>Daily revenue for the last seven days.</p></div>
+        <div class="sales-bars">
+            {% for row in seven_day_chart %}
+            <div class="sales-bar-column">
+                <div class="sales-bar-value">{% if row.value > 0 %}R{{ "%.0f"|format(row.value) }}{% else %}—{% endif %}</div>
+                <div class="sales-bar-track"><div class="sales-bar" style="height:{{ row.percent }}%" title="{{ row.date }} — R{{ '%.2f'|format(row.value) }}"></div></div>
+                <div class="sales-bar-day">{{ row.label }}</div>
+                <div class="sales-bar-date">{{ row.date }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="tdm-chart-panel">
+        <div class="tdm-chart-title"><h3>How Customers Paid</h3><p>Payment-method share across the last seven days.</p></div>
+        {% if payment_chart %}
+        <div class="breakdown-list">
+            {% for row in payment_chart %}
+            <div>
+                <div class="breakdown-row-head"><strong>{{ row.label }}</strong><span>R{{ "%.2f"|format(row.value) }} · {{ "%.0f"|format(row.percent) }}%</span></div>
+                <div class="breakdown-track"><div class="breakdown-fill" style="width:{{ row.percent }}%"></div></div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<div class="dashboard-empty">Record sales to see payment-method trends.</div>{% endif %}
+    </section>
+</div>
+
+<div class="dashboard-secondary-grid">
+    <section class="dashboard-panel">
+        <div class="dashboard-panel-header"><div><h3>Where is TYDAL's money?</h3><p>Current money by location.</p></div><a href="{{ url_for('money.index') }}">View Money →</a></div>
+        {% if account_rows %}<div class="dashboard-list">{% for row in account_rows %}
+        <div class="dashboard-list-row"><div><strong>{{ row.account.name }}</strong><span>{{ row.account.account_type|replace("_"," ")|title }}</span></div><strong>R{{ "%.2f"|format(row.balance) }}</strong></div>
+        {% endfor %}</div>{% else %}<div class="dashboard-empty">No money accounts yet.</div>{% endif %}
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="dashboard-panel-header"><div><h3>Partner Position</h3><p>Current balance between TYDAL and partners.</p></div><a href="{{ url_for('partners.index') }}">View Partners →</a></div>
+        <div class="partner-position-display"><span>{{ partner_position_label }}</span><strong>R{{ "%.2f"|format(partner_position_amount) }}</strong></div>
+        {% if partner_net_position == 0 %}<div class="dashboard-status-good">Everything is settled.</div>
+        {% elif partner_net_position > 0 %}<div class="dashboard-status-info">TYDAL currently owes money to partners.</div>
+        {% else %}<div class="dashboard-status-warning">Partners currently owe money back to TYDAL.</div>{% endif %}
+    </section>
+</div>
+
+<div class="dashboard-secondary-grid">
+    <section class="dashboard-panel">
+        <div class="dashboard-panel-header"><div><h3>Stock by Brand</h3><p>Where TYDAL's current units are concentrated.</p></div><a href="{{ url_for('inventory.index') }}">Inventory →</a></div>
+        {% if stock_chart %}<div class="breakdown-list">{% for row in stock_chart %}
+        <div><div class="breakdown-row-head"><strong>{{ row.label }}</strong><span>{{ row.units }} unit{% if row.units != 1 %}s{% endif %} · {{ "%.0f"|format(row.percent) }}%</span></div><div class="breakdown-track"><div class="breakdown-fill" style="width:{{ row.percent }}%"></div></div></div>
+        {% endfor %}</div>{% else %}<div class="dashboard-empty">No stock to analyse yet.</div>{% endif %}
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="dashboard-panel-header"><div><h3>Stock Attention</h3><p>Products at or below their low-stock level.</p></div><a href="{{ url_for('inventory.index') }}">View Inventory →</a></div>
+        {% if low_stock_products %}<div class="low-stock-grid">{% for product in low_stock_products %}
+        <div class="low-stock-item"><div><strong>{{ product.name }}</strong><span>{% if product.brand %}{{ product.brand }} · {% endif %}Low stock</span></div><div class="low-stock-count">{{ product.quantity }}<span>left</span></div></div>
+        {% endfor %}</div>{% else %}<div class="dashboard-status-good">Stock levels are looking healthy.</div>{% endif %}
+    </section>
+</div>
+
+<div class="dashboard-secondary-grid">
+    <section class="dashboard-panel">
+        <div class="dashboard-panel-header"><div><h3>Recent Sales</h3><p>Latest TYDAL customer sales.</p></div><a href="{{ url_for('sales.index') }}">View Sales →</a></div>
+        {% if recent_sales %}<div class="dashboard-list">{% for sale in recent_sales %}
+        <div class="dashboard-list-row"><div><strong>{{ sale.sale_number }}</strong><span>{{ sale.sale_date.strftime("%d %b, %H:%M") }}</span></div><strong>+R{{ "%.2f"|format(sale.total_amount) }}</strong></div>
+        {% endfor %}</div>{% else %}<div class="dashboard-empty">No sales recorded yet.</div>{% endif %}
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="dashboard-panel-header"><div><h3>Recent Purchases</h3><p>Latest supplier stock orders.</p></div><a href="{{ url_for('purchases.index') }}">View Purchases →</a></div>
+        {% if recent_purchases %}<div class="dashboard-list">{% for purchase in recent_purchases %}
+        <div class="dashboard-list-row"><div><strong>{{ purchase.supplier }}</strong><span>{{ purchase.purchase_number }} · {{ purchase.purchase_date.strftime("%d %b") }}</span></div><strong>-R{{ "%.2f"|format(purchase.total_amount) }}</strong></div>
+        {% endfor %}</div>{% else %}<div class="dashboard-empty">No purchases recorded yet.</div>{% endif %}
+    </section>
+</div>
+
+<section class="dashboard-panel dashboard-wide-panel">
+    <div class="dashboard-panel-header"><div><h3>Recent Money Activity</h3><p>Latest movements in TYDAL's financial ledger.</p></div><a href="{{ url_for('money.index') }}">View Money →</a></div>
+    {% if recent_transactions %}<div class="dashboard-list">{% for transaction in recent_transactions %}
+    <div class="dashboard-list-row">
+        <div><strong>{{ transaction.description }}</strong><span>{{ transaction.transaction_type|replace("_"," ")|title }} · {{ transaction.transaction_date.strftime("%d %b, %H:%M") }}</span></div>
+        <strong>{% if transaction.to_account_id and not transaction.from_account_id %}+R{{ "%.2f"|format(transaction.amount) }}{% elif transaction.from_account_id and not transaction.to_account_id %}-R{{ "%.2f"|format(transaction.amount) }}{% else %}R{{ "%.2f"|format(transaction.amount) }}{% endif %}</strong>
+    </div>
+    {% endfor %}</div>{% else %}<div class="dashboard-empty">No money activity recorded yet.</div>{% endif %}
+</section>
+
+{% endblock %}

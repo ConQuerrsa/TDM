@@ -1,0 +1,781 @@
+{% extends "base.html" %}
+
+{% block title %}Partners — TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header partners-page-header">
+
+    <div>
+        <h2>Partners</h2>
+        <p>
+            Keep TYDAL and partner money completely accountable.
+        </p>
+    </div>
+
+    <button type="button" class="primary-button" id="openPartnerTransactionModal" {% if not partners %}disabled{% endif
+        %}>
+        + Partner Transaction
+    </button>
+
+</div>
+
+
+<!-- ======================================================
+     BUSINESS-WIDE SUMMARY
+     ====================================================== -->
+
+<div class="partner-summary-grid">
+
+    <div class="stat-card">
+        <div class="stat-label">Contributed</div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(total_contributions) }}
+        </div>
+
+        <div class="stat-description">
+            Money partners gave TYDAL
+        </div>
+    </div>
+
+
+    <div class="stat-card">
+        <div class="stat-label">Advanced to TYDAL</div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(total_advances) }}
+        </div>
+
+        <div class="stat-description">
+            Partner money intended to be repaid
+        </div>
+    </div>
+
+
+    <div class="stat-card">
+        <div class="stat-label">Withdrawn</div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(total_withdrawals) }}
+        </div>
+
+        <div class="stat-description">
+            Business money taken by partners
+        </div>
+    </div>
+
+
+    <div class="stat-card">
+        <div class="stat-label">Paid Personally</div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(total_personal_expenses) }}
+        </div>
+
+        <div class="stat-description">
+            TYDAL costs partners covered themselves
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     PARTNER CARDS
+     ====================================================== -->
+
+<section class="partners-section">
+
+    <div class="section-heading">
+
+        <div>
+            <h3>Partner positions</h3>
+
+            <p>
+                See each person's activity separately.
+            </p>
+        </div>
+
+    </div>
+
+
+    {% if partner_rows %}
+
+    <div class="partner-card-grid">
+
+        {% for row in partner_rows %}
+
+        <article class="partner-card">
+
+            <div class="partner-card-header">
+
+                <div class="partner-avatar">
+                    {{ row.partner.name[0]|upper }}
+                </div>
+
+                <div>
+                    <h4>{{ row.partner.name }}</h4>
+
+                    <span>
+                        {{ row.partner.role|title }}
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="partner-metrics">
+
+                <div>
+                    <span>Contributed</span>
+                    <strong>
+                        R{{ "%.2f"|format(row.contributions) }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Advanced</span>
+                    <strong>
+                        R{{ "%.2f"|format(row.advances) }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Withdrawn</span>
+                    <strong>
+                        R{{ "%.2f"|format(row.withdrawals) }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Paid personally</span>
+                    <strong>
+                        R{{ "%.2f"|format(row.personal_expenses) }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Repaid to TYDAL</span>
+                    <strong>
+                        R{{ "%.2f"|format(row.repayments) }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>TYDAL settled</span>
+                    <strong>
+                        R{{ "%.2f"|format(row.settlements) }}
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="partner-position">
+
+                {% if row.position_type == "partner_owes_business" %}
+
+                <div class="position-box position-business">
+
+                    <span>{{ row.partner.name }} owes TYDAL</span>
+
+                    <strong>
+                        R{{ "%.2f"|format(row.position_amount) }}
+                    </strong>
+
+                </div>
+
+
+                {% elif row.position_type == "business_owes_partner" %}
+
+                <div class="position-box position-partner">
+
+                    <span>TYDAL owes {{ row.partner.name }}</span>
+
+                    <strong>
+                        R{{ "%.2f"|format(row.position_amount) }}
+                    </strong>
+
+                </div>
+
+
+                {% else %}
+
+                <div class="position-box position-clear">
+
+                    <span>Current position</span>
+
+                    <strong>Clear ✓</strong>
+
+                </div>
+
+                {% endif %}
+            </div>
+
+        </article>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+        <h4>No partners yet</h4>
+        <p>Partners added during Business Setup will appear here.</p>
+    </div>
+
+    {% endif %}
+
+
+    <!-- ======================================================
+     HISTORY
+     ====================================================== -->
+
+    <section class="partners-section">
+
+        <div class="section-heading">
+
+            <div>
+                <h3>Partner money history</h3>
+
+                <p>
+                    A traceable record of money between TYDAL
+                    and its partners.
+                </p>
+            </div>
+
+        </div>
+
+
+        {% if transactions %}
+
+        <div class="partner-history">
+
+            {% for transaction in transactions %}
+
+            <div class="partner-history-row">
+
+                <div class="partner-history-main">
+
+                    <div class="
+                    partner-transaction-icon
+                    partner-type-{{ transaction.transaction_type }}
+                ">
+
+                        {% if transaction.transaction_type in
+                        ["contribution", "advance", "repayment"] %}
+                        +
+                        {% elif transaction.transaction_type in ["withdrawal", "settlement"] %}
+                        −
+                        {% else %}
+                        •
+                        {% endif %}
+
+                    </div>
+
+
+                    <div>
+
+                        <strong>
+                            {{ transaction.partner.name }}
+                        </strong>
+
+                        <span>
+                            {{ transaction.transaction_type
+                            |replace("_", " ")
+                            |title }}
+                            ·
+                            {{ transaction.transaction_date.strftime(
+                            "%d %b %Y · %H:%M"
+                            ) }}
+                        </span>
+
+                        {% if transaction.description %}
+
+                        <small>
+                            {{ transaction.description }}
+                        </small>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="partner-history-side">
+
+                    <strong>
+                        R{{ "%.2f"|format(transaction.amount) }}
+                    </strong>
+
+                    {% if transaction.created_by %}
+
+                    <span>
+                        Recorded by {{ transaction.created_by.name }}
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-ledger">
+
+            <strong>No partner transactions yet.</strong>
+
+            <span>
+                Contributions, withdrawals and other partner
+                activity will appear here.
+            </span>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- ======================================================
+     PARTNER TRANSACTION MODAL
+     ====================================================== -->
+
+    <div class="tdm-modal" id="partnerModal">
+
+        <div class="tdm-modal-backdrop" onclick="closePartnerModal()"></div>
+
+
+        <div class="tdm-modal-card">
+
+            <div class="tdm-modal-header">
+
+                <div>
+
+                    <span class="modal-eyebrow">
+                        PARTNER MONEY
+                    </span>
+
+                    <h3>Partner Transaction</h3>
+
+                    <p>
+                        Record money between a partner and TYDAL.
+                    </p>
+
+                </div>
+
+
+                <button class="modal-close" type="button" onclick="closePartnerModal()">
+                    ×
+                </button>
+
+            </div>
+
+
+            <form method="POST" action="{{ url_for('partners.record_transaction') }}">
+
+                <div class="form-group">
+
+                    <label>Partner</label>
+
+                    <select name="partner_id" id="partnerId" required>
+
+                        <option value="">Choose partner</option>
+
+                        {% for partner in partners %}
+                        <option value="{{ partner.id }}">
+                            {{ partner.name }}
+                        </option>
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>What happened?</label>
+
+                    <select name="transaction_type" id="partnerTransactionType" required>
+
+                        <option value="">
+                            Choose transaction type
+                        </option>
+
+                        <option value="contribution">
+                            Contribution — partner gave TYDAL money
+                        </option>
+
+                        <option value="advance">
+                            Advance — partner lent TYDAL money
+                        </option>
+
+                        <option value="withdrawal">
+                            Withdrawal — partner took TYDAL money
+                        </option>
+
+                        <option value="personal_expense">
+                            Personal Expense — partner paid a TYDAL cost
+                        </option>
+
+                        <option value="repayment">
+                            Repayment — partner returned TYDAL money
+                        </option>
+
+                        <option value="settlement">
+                            Settlement — TYDAL pays money owed to partner
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="partner-type-help" id="partnerTypeHelp">
+                    Choose what happened and TDM will handle
+                    the money correctly.
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Amount</label>
+
+                    <div class="money-input">
+
+                        <span>R</span>
+
+                        <input type="number" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group" id="partnerAccountGroup">
+
+                    <label id="partnerAccountLabel">
+                        Money location
+                    </label>
+
+                    <select name="money_account_id" id="partnerMoneyAccount">
+
+                        <option value="">
+                            Choose money location
+                        </option>
+
+                        {% for row in account_rows %}
+
+                        <option value="{{ row.account.id }}" data-balance="{{ row.balance }}">
+                            {{ row.account.name }}
+                            — R{{ "%.2f"|format(row.balance) }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                    <small id="partnerAccountHelp">
+                        Select where the money entered or left TYDAL.
+                    </small>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Description
+                        <span class="optional-label">
+                            Optional
+                        </span>
+                    </label>
+
+                    <input type="text" name="description" maxlength="255"
+                        placeholder="e.g. Took cash for family emergency">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Notes
+                        <span class="optional-label">
+                            Optional
+                        </span>
+                    </label>
+
+                    <textarea name="notes" rows="3" placeholder="Any extra information"></textarea>
+
+                </div>
+
+
+                <div class="partner-effect-box" id="partnerEffectBox">
+
+                    <strong>TDM money effect</strong>
+
+                    <span>
+                        Choose a transaction type first.
+                    </span>
+
+                </div>
+
+
+                <div class="modal-actions">
+
+                    <button type="button" class="secondary-button" onclick="closePartnerModal()">
+                        Cancel
+                    </button>
+
+                    <button type="submit" class="primary-button">
+                        Record Transaction
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        const partnerModal =
+            document.getElementById("partnerModal");
+
+        const transactionType =
+            document.getElementById("partnerTransactionType");
+
+        const accountGroup =
+            document.getElementById("partnerAccountGroup");
+
+        const accountSelect =
+            document.getElementById("partnerMoneyAccount");
+
+        const accountLabel =
+            document.getElementById("partnerAccountLabel");
+
+        const accountHelp =
+            document.getElementById("partnerAccountHelp");
+
+        const typeHelp =
+            document.getElementById("partnerTypeHelp");
+
+        const effectBox =
+            document.getElementById("partnerEffectBox");
+
+        const openPartnerTransactionButton =
+            document.getElementById("openPartnerTransactionModal");
+
+
+        if (openPartnerTransactionButton) {
+
+            openPartnerTransactionButton.addEventListener(
+                "click",
+                openPartnerModal
+            );
+
+        }
+
+
+        function openPartnerModal() {
+
+            partnerModal.classList.add("open");
+
+            document.body.classList.add("modal-open");
+
+        }
+
+
+        function closePartnerModal() {
+
+            partnerModal.classList.remove("open");
+
+            document.body.classList.remove("modal-open");
+
+        }
+
+
+        const transactionRules = {
+
+            contribution: {
+                help:
+                    "The partner is giving money to TYDAL. " +
+                    "No repayment is expected by default.",
+
+                label:
+                    "Where did the money go?",
+
+                account:
+                    "Choose the TYDAL money location receiving it.",
+
+                effect:
+                    "TYDAL money increases. " +
+                    "The contribution is recorded under this partner."
+            },
+
+            advance: {
+                help:
+                    "The partner is lending money to TYDAL.",
+
+                label:
+                    "Where did the money go?",
+
+                account:
+                    "Choose the TYDAL money location receiving it.",
+
+                effect:
+                    "TYDAL money increases and TDM records " +
+                    "that TYDAL owes the partner."
+            },
+
+            withdrawal: {
+                help:
+                    "The partner is taking business money.",
+
+                label:
+                    "Where was the money taken from?",
+
+                account:
+                    "Choose the TYDAL money location paying it.",
+
+                effect:
+                    "TYDAL money decreases and the amount is " +
+                    "recorded against the partner."
+            },
+
+            personal_expense: {
+                help:
+                    "The partner used personal money to pay " +
+                    "a legitimate TYDAL business cost.",
+
+                effect:
+                    "TYDAL cash/bank does not change because " +
+                    "the partner used their own money."
+            },
+
+            repayment: {
+                help:
+                    "The partner is returning money to TYDAL.",
+
+                label:
+                    "Where did the returned money go?",
+
+                account:
+                    "Choose the TYDAL money location receiving it.",
+
+                effect:
+                    "TYDAL money increases and the partner's " +
+                    "withdrawal position is reduced."
+            },
+
+            settlement: {
+                help:
+                    "TYDAL is paying money it currently owes " +
+                    "this partner.",
+
+                label:
+                    "Where is TYDAL paying from?",
+
+                account:
+                    "Choose the TYDAL money location paying the partner.",
+
+                effect:
+                    "TYDAL money decreases and the amount TYDAL " +
+                    "owes the partner is reduced."
+            }
+
+        };
+
+
+        function updatePartnerTransactionUI() {
+
+            const type = transactionType.value;
+
+            const rule = transactionRules[type];
+
+
+            if (!rule) {
+
+                typeHelp.textContent =
+                    "Choose what happened and TDM will handle " +
+                    "the money correctly.";
+
+                accountGroup.style.display = "";
+
+                accountSelect.required = false;
+
+                effectBox.querySelector("span").textContent =
+                    "Choose a transaction type first.";
+
+                return;
+            }
+
+
+            typeHelp.textContent = rule.help;
+
+
+            if (type === "personal_expense") {
+
+                accountGroup.style.display = "none";
+
+                accountSelect.required = false;
+
+                accountSelect.value = "";
+
+            } else {
+
+                accountGroup.style.display = "";
+
+                accountSelect.required = true;
+
+                accountLabel.textContent = rule.label;
+
+                accountHelp.textContent = rule.account;
+
+            }
+
+
+            effectBox.querySelector("span").textContent =
+                rule.effect;
+
+        }
+
+
+        transactionType.addEventListener(
+            "change",
+            updatePartnerTransactionUI
+        );
+
+
+        document.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key === "Escape" &&
+                    partnerModal.classList.contains("open")
+                ) {
+
+                    closePartnerModal();
+
+                }
+
+            }
+        );
+
+    </script>
+
+    {% endblock %}

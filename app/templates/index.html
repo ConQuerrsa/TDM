@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}TDM — Business Setup{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h2>TYDAL Business Setup</h2>
+    <p>Build the starting picture of TYDAL before recording new activity.</p>
+</div>
+
+<div class="setup-grid">
+
+    <section class="setup-card">
+        <div class="setup-card-header">
+            <div>
+                <span class="setup-kicker">01</span>
+                <h3>Partners</h3>
+                <p>People who operate TYDAL.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('setup.add_partner') }}" class="setup-form">
+
+            <label>Name</label>
+            <input type="text" name="name" placeholder="Partner name" required>
+
+            <label>Phone</label>
+            <input type="text" name="phone" placeholder="Phone number" required>
+
+            <label>Role</label>
+            <select name="role">
+                <option value="partner">Partner</option>
+                <option value="admin">Admin</option>
+            </select>
+
+            <button type="submit" class="primary-button">
+                Add Partner
+            </button>
+
+        </form>
+
+        {% if partners %}
+        <div class="setup-list">
+            {% for partner in partners %}
+            <div class="setup-list-item">
+                <div>
+                    <strong>{{ partner.name }}</strong>
+                    <span>{{ partner.phone }}</span>
+                </div>
+                <small>{{ partner.role|capitalize }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+
+
+    <section class="setup-card">
+        <div class="setup-card-header">
+            <div>
+                <span class="setup-kicker">02</span>
+                <h3>Money Locations</h3>
+                <p>Where TYDAL money currently exists.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('setup.add_money_account') }}" class="setup-form">
+
+            <label>Name</label>
+            <input type="text" name="name" placeholder="e.g. Sipho Cash" required>
+
+            <label>Type</label>
+            <select name="account_type">
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+                <option value="cash_send">Cash Send</option>
+                <option value="mobile_money">Mobile Money</option>
+                <option value="other">Other</option>
+            </select>
+
+            <label>Owner</label>
+            <select name="owner_user_id">
+                <option value="">TYDAL / No specific owner</option>
+                {% for partner in partners %}
+                <option value="{{ partner.id }}">{{ partner.name }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Current opening amount</label>
+            <input type="number" name="opening_balance" min="0" step="0.01" value="0.00">
+
+            <button type="submit" class="primary-button">
+                Add Money Location
+            </button>
+
+        </form>
+
+        {% if money_accounts %}
+        <div class="setup-list">
+            {% for account in money_accounts %}
+            <div class="setup-list-item">
+                <div>
+                    <strong>{{ account.name }}</strong>
+                    <span>{{ account.account_type|replace('_', ' ')|title }}</span>
+                </div>
+                <small>R{{ "%.2f"|format(account.opening_balance|float) }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+
+
+    <section class="setup-card">
+        <div class="setup-card-header">
+            <div>
+                <span class="setup-kicker">03</span>
+                <h3>Stock Locations</h3>
+                <p>Where TYDAL clothing is physically held.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('setup.add_stock_location') }}" class="setup-form">
+
+            <label>Name</label>
+            <input type="text" name="name" placeholder="e.g. Partner A Stock" required>
+
+            <label>Type</label>
+            <select name="location_type">
+                <option value="partner">Partner</option>
+                <option value="storage">Storage</option>
+                <option value="home">Home</option>
+                <option value="other">Other</option>
+            </select>
+
+            <label>Owner</label>
+            <select name="owner_user_id">
+                <option value="">No specific owner</option>
+                {% for partner in partners %}
+                <option value="{{ partner.id }}">{{ partner.name }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="primary-button">
+                Add Stock Location
+            </button>
+
+        </form>
+
+        {% if stock_locations %}
+        <div class="setup-list">
+            {% for location in stock_locations %}
+            <div class="setup-list-item">
+                <div>
+                    <strong>{{ location.name }}</strong>
+                    <span>{{ location.location_type|title }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+
+
+    <section class="setup-card">
+        <div class="setup-card-header">
+            <div>
+                <span class="setup-kicker">04</span>
+                <h3>Opening Stock</h3>
+                <p>Enter stock TYDAL already owns.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('setup.add_product') }}" class="setup-form">
+
+            <label>Item name</label>
+            <input type="text" name="name" placeholder="e.g. Billabong Shorts" required>
+
+            <div class="two-inputs">
+                <div>
+                    <label>Brand</label>
+                    <input type="text" name="brand" placeholder="Billabong">
+                </div>
+
+                <div>
+                    <label>Category</label>
+                    <input type="text" name="category" placeholder="Shorts">
+                </div>
+            </div>
+
+            <div class="two-inputs">
+                <div>
+                    <label>Size</label>
+                    <input type="text" name="size" placeholder="32">
+                </div>
+
+                <div>
+                    <label>Colour</label>
+                    <input type="text" name="color" placeholder="Black">
+                </div>
+            </div>
+
+            <div class="two-inputs">
+                <div>
+                    <label>Cost price</label>
+                    <input type="number" name="cost_price" min="0" step="0.01" required>
+                </div>
+
+                <div>
+                    <label>Selling price</label>
+                    <input type="number" name="selling_price" min="0" step="0.01" required>
+                </div>
+            </div>
+
+            <div class="two-inputs">
+                <div>
+                    <label>Quantity</label>
+                    <input type="number" name="quantity" min="0" step="1" value="0" required>
+                </div>
+
+                <div>
+                    <label>Low stock level</label>
+                    <input type="number" name="low_stock_level" min="0" step="1" value="2">
+                </div>
+            </div>
+
+            <label>Physical location</label>
+            <select name="stock_location_id">
+                <option value="">Not assigned yet</option>
+                {% for location in stock_locations %}
+                <option value="{{ location.id }}">{{ location.name }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Supplier</label>
+            <input type="text" name="supplier" placeholder="Alibaba / My Runway / Other">
+
+            <button type="submit" class="primary-button">
+                Add Opening Stock
+            </button>
+
+        </form>
+    </section>
+
+
+    <section class="setup-card setup-card-wide">
+        <div class="setup-card-header">
+            <div>
+                <span class="setup-kicker">05</span>
+                <h3>Partner Money History</h3>
+                <p>Record money partners have put into or taken from TYDAL.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('setup.add_partner_transaction') }}" class="setup-form">
+
+            <div class="two-inputs">
+
+                <div>
+                    <label>Partner</label>
+                    <select name="partner_id" required>
+                        <option value="">Select partner</option>
+                        {% for partner in partners %}
+                        <option value="{{ partner.id }}">
+                            {{ partner.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label>Type</label>
+                    <select name="transaction_type" required>
+                        <option value="contribution">
+                            Contribution — helping TYDAL
+                        </option>
+                        <option value="advance">
+                            Advance / Loan — TYDAL owes partner
+                        </option>
+                        <option value="withdrawal">
+                            Withdrawal — partner took TYDAL money
+                        </option>
+                        <option value="personal_expense">
+                            Personal Expense — partner paid TYDAL expense
+                        </option>
+                        <option value="repayment">
+                            Repayment — money returned to TYDAL
+                        </option>
+                    </select>
+                </div>
+
+            </div>
+
+            <div class="two-inputs">
+
+                <div>
+                    <label>Amount</label>
+                    <input type="number" name="amount" min="0.01" step="0.01" required>
+                </div>
+
+                <div>
+                    <label>Money location</label>
+                    <select name="money_account_id">
+                        <option value="">Not specified</option>
+                        {% for account in money_accounts %}
+                        <option value="{{ account.id }}">
+                            {{ account.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+
+            <label>Description</label>
+            <input type="text" name="description" placeholder="What was this money for?">
+
+            <button type="submit" class="primary-button">
+                Record Partner Transaction
+            </button>
+
+        </form>
+    </section>
+
+</div>
+
+<section class="setup-completion-card">
+
+    <div class="setup-completion-header">
+        <div>
+            <span class="setup-badge">INITIAL SETUP</span>
+            <h3>Complete TYDAL Business Setup</h3>
+            <p>
+                Complete this only after TYDAL's opening money, stock,
+                partners and remembered historical records have been entered.
+            </p>
+        </div>
+    </div>
+
+    <div class="setup-warning">
+        <strong>Development environment</strong>
+        <p>
+            Use test data only while TDM is running locally.
+            Real TYDAL opening figures should be entered after deployment
+            to the permanent production database.
+        </p>
+    </div>
+
+    <form method="POST" action="{{ url_for('setup.complete_setup') }}" onsubmit="return confirmSetupCompletion();">
+
+        <label class="setup-confirmation">
+            <input type="checkbox" id="confirmSetupCheckbox" required>
+
+            <span>
+                I confirm that TYDAL's opening information has been reviewed
+                and I want to complete Business Setup.
+            </span>
+        </label>
+
+        <button type="submit" class="complete-setup-button">
+            Complete Business Setup
+        </button>
+
+    </form>
+
+</section>
+
+<script>
+    function confirmSetupCompletion() {
+        const checkbox = document.getElementById("confirmSetupCheckbox");
+
+        if (!checkbox.checked) {
+            return false;
+        }
+
+        return window.confirm(
+            "Complete TYDAL Business Setup?\n\n" +
+            "Opening setup should only be finalized after the starting records " +
+            "have been reviewed.\n\n" +
+            "Continue?"
+        );
+    }
+</script>
+
+{% endblock %}

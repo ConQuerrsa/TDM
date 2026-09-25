@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}Money — TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header money-page-header">
+    <div>
+        <h2>Money</h2>
+        <p>Know exactly where TYDAL's money is and how it has moved.</p>
+    </div>
+
+    <div class="money-header-actions">
+        <button class="secondary-button" type="button" onclick="openTransferModal()" {% if account_rows|length < 2
+            %}disabled{% endif %}>
+            Transfer Money
+        </button>
+    </div>
+</div>
+
+
+<!-- TOTAL BUSINESS MONEY -->
+<section class="money-hero">
+
+    <div>
+        <span class="money-hero-label">TOTAL TYDAL MONEY</span>
+
+        <div class="money-hero-value">
+            R{{ "%.2f"|format(total_business_money) }}
+        </div>
+
+        <p>
+            Business money across all active locations.
+        </p>
+    </div>
+
+    <div class="money-hero-status">
+        <span class="status-dot"></span>
+        Live from TDM ledger
+    </div>
+
+</section>
+
+
+<!-- WHERE THE MONEY IS -->
+<section class="money-section">
+
+    <div class="section-heading">
+        <div>
+            <h3>Where is TYDAL's money?</h3>
+            <p>
+                These are the places currently holding business money.
+            </p>
+        </div>
+    </div>
+
+
+    {% if account_rows %}
+
+    <div class="money-account-grid">
+
+        {% for row in account_rows %}
+
+        <article class="money-account-card">
+
+            <div class="money-account-top">
+
+                <div class="money-account-icon">
+                    {% if row.account.account_type == "cash" %}
+                    R
+                    {% elif row.account.account_type == "bank" %}
+                    B
+                    {% else %}
+                    ₿
+                    {% endif %}
+                </div>
+
+                <div class="money-account-info">
+                    <strong>{{ row.account.name }}</strong>
+
+                    <span>
+                        {{ row.account.account_type|replace("_", " ")|title }}
+                    </span>
+                </div>
+
+            </div>
+
+            <div class="money-account-balance">
+                R{{ "%.2f"|format(row.balance) }}
+            </div>
+
+            <div class="money-account-footer">
+                TYDAL funds held here
+            </div>
+
+        </article>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+
+        <div class="empty-state-icon">R</div>
+
+        <h4>No money locations yet</h4>
+
+        <p>
+            TYDAL's cash holders, bank accounts and other money
+            locations will appear here after Business Setup.
+        </p>
+
+        <a href="{{ url_for('setup.index') }}" class="primary-button">
+            Open Business Setup
+        </a>
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+<!-- RECENT MONEY MOVEMENT -->
+<section class="money-section">
+
+    <div class="section-heading">
+        <div>
+            <h3>Recent money movement</h3>
+            <p>
+                The latest financial activity recorded by TDM.
+            </p>
+        </div>
+
+        <span class="transaction-count">
+            {{ recent_transactions|length }} recent
+        </span>
+    </div>
+
+
+    {% if recent_transactions %}
+
+    <div class="transaction-list">
+
+        {% for transaction in recent_transactions %}
+
+        <div class="transaction-row">
+
+            <div class="transaction-main">
+
+                <div class="transaction-icon">
+                    {% if transaction.transaction_type == "sale" %}
+                    +
+                    {% elif transaction.transaction_type in ["expense", "purchase", "withdrawal"] %}
+                    −
+                    {% elif transaction.transaction_type == "transfer" %}
+                    ↔
+                    {% else %}
+                    •
+                    {% endif %}
+                </div>
+
+                <div>
+                    <strong>
+                        {{ transaction.description or transaction.transaction_type|replace("_", " ")|title }}
+                    </strong>
+
+                    <span>
+                        {{ transaction.transaction_date.strftime("%d %b %Y · %H:%M") }}
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="transaction-amount
+                {% if transaction.to_account_id and not transaction.from_account_id %}
+                    money-in
+                {% elif transaction.from_account_id and not transaction.to_account_id %}
+                    money-out
+                {% endif %}
+            ">
+
+                {% if transaction.to_account_id and not transaction.from_account_id %}
+                +
+                {% elif transaction.from_account_id and not transaction.to_account_id %}
+                −
+                {% endif %}
+
+                R{{ "%.2f"|format(transaction.amount) }}
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="empty-ledger">
+        <strong>No money movement recorded yet.</strong>
+        <span>
+            Sales, purchases, expenses, partner money and transfers
+            will automatically appear here.
+        </span>
+    </div>
+
+    {% endif %}
+
+</section>
+
+<!-- ======================================================
+     TRANSFER MONEY MODAL
+     ====================================================== -->
+
+<div class="tdm-modal" id="transferModal">
+
+    <div class="tdm-modal-backdrop" onclick="closeTransferModal()">
+    </div>
+
+    <div class="tdm-modal-card">
+
+        <div class="tdm-modal-header">
+
+            <div>
+                <span class="modal-eyebrow">
+                    INTERNAL MONEY MOVEMENT
+                </span>
+
+                <h3>Transfer Money</h3>
+
+                <p>
+                    Move TYDAL money between locations without
+                    recording new income or an expense.
+                </p>
+            </div>
+
+            <button class="modal-close" type="button" onclick="closeTransferModal()" aria-label="Close">
+                ×
+            </button>
+
+        </div>
+
+
+        <form method="POST" action="{{ url_for('money.transfer') }}">
+
+            <div class="form-group">
+
+                <label for="fromAccount">
+                    From
+                </label>
+
+                <select name="from_account_id" id="fromAccount" required>
+
+                    <option value="">
+                        Choose money location
+                    </option>
+
+                    {% for row in account_rows %}
+
+                    <option value="{{ row.account.id }}" data-balance="{{ row.balance }}">
+                        {{ row.account.name }}
+                        — R{{ "%.2f"|format(row.balance) }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small id="availableBalance">
+                    Select a location to see its available balance.
+                </small>
+
+            </div>
+
+
+            <div class="transfer-direction">
+                ↓
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="toAccount">
+                    To
+                </label>
+
+                <select name="to_account_id" id="toAccount" required>
+
+                    <option value="">
+                        Choose destination
+                    </option>
+
+                    {% for row in account_rows %}
+
+                    <option value="{{ row.account.id }}">
+                        {{ row.account.name }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="transferAmount">
+                    Amount
+                </label>
+
+                <div class="money-input">
+
+                    <span>R</span>
+
+                    <input type="number" name="amount" id="transferAmount" min="0.01" step="0.01" placeholder="0.00"
+                        required>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="transferDescription">
+                    Description
+                    <span class="optional-label">
+                        Optional
+                    </span>
+                </label>
+
+                <input type="text" name="description" id="transferDescription" maxlength="255"
+                    placeholder="e.g. Cash deposited into Capitec">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="transferNotes">
+                    Notes
+                    <span class="optional-label">
+                        Optional
+                    </span>
+                </label>
+
+                <textarea name="notes" id="transferNotes" rows="3"
+                    placeholder="Anything the partners should know about this transfer"></textarea>
+
+            </div>
+
+
+            <div class="transfer-info">
+
+                <strong>This does not change TYDAL's total money.</strong>
+
+                <span>
+                    It only changes where the business money is held.
+                </span>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button type="button" class="secondary-button" onclick="closeTransferModal()">
+                    Cancel
+                </button>
+
+                <button type="submit" class="primary-button">
+                    Record Transfer
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+
+    const transferModal =
+        document.getElementById("transferModal");
+
+    const fromAccount =
+        document.getElementById("fromAccount");
+
+    const toAccount =
+        document.getElementById("toAccount");
+
+    const availableBalance =
+        document.getElementById("availableBalance");
+
+
+    function openTransferModal() {
+
+        transferModal.classList.add("open");
+
+        document.body.classList.add("modal-open");
+    }
+
+
+    function closeTransferModal() {
+
+        transferModal.classList.remove("open");
+
+        document.body.classList.remove("modal-open");
+    }
+
+
+    if (fromAccount) {
+
+        fromAccount.addEventListener("change", function () {
+
+            const selected =
+                this.options[this.selectedIndex];
+
+            const balance =
+                selected.dataset.balance;
+
+            if (balance !== undefined) {
+
+                availableBalance.textContent =
+                    `Available: R${Number(balance).toFixed(2)}`;
+
+            } else {
+
+                availableBalance.textContent =
+                    "Select a location to see its available balance.";
+
+            }
+
+
+            /*
+             Prevent choosing the same account as destination.
+            */
+
+            Array.from(toAccount.options).forEach(option => {
+
+                option.disabled =
+                    option.value &&
+                    option.value === this.value;
+
+            });
+
+        });
+
+    }
+
+
+    document.addEventListener("keydown", function (event) {
+
+        if (
+            event.key === "Escape" &&
+            transferModal.classList.contains("open")
+        ) {
+
+            closeTransferModal();
+
+        }
+
+    });
+
+</script>
+
+{% endblock %}

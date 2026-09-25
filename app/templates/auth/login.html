@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDM — Login</title>
+</head>
+
+<body>
+
+    <main>
+        <h1>TDM</h1>
+        <p>TYDAL Business Manager</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST">
+
+            <label for="phone">Phone number</label>
+            <input
+                type="text"
+                id="phone"
+                name="phone"
+                required
+                autocomplete="username"
+            >
+
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                autocomplete="current-password"
+            >
+
+            <button type="submit">Sign in</button>
+
+        </form>
+    </main>
+
+</body>
+</html>

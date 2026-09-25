@@ -1,0 +1,943 @@
+{% extends "base.html" %}
+
+{% block title %}
+TDM — TYDAL Setup
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-header setup-header">
+
+    <div>
+        <span class="eyebrow">TYDAL INITIALIZATION</span>
+
+        <h2>Set up TYDAL</h2>
+
+        <p>
+            Establish what TYDAL already has before TDM starts tracking
+            everything going forward.
+        </p>
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     1. PARTNERS
+===================================================== -->
+
+<section class="setup-section">
+
+    <div class="section-heading">
+        <div>
+            <span class="section-number">01</span>
+            <h3>Partners</h3>
+            <p>Add the people who own and operate TYDAL.</p>
+        </div>
+    </div>
+
+
+    <div class="setup-card">
+
+        <form method="POST" action="{{ url_for('setup.add_partner') }}">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label for="partner-name">Full name</label>
+                    <input id="partner-name" type="text" name="name" placeholder="e.g. John Doe" required>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="partner-phone">Phone number</label>
+                    <input id="partner-phone" type="text" name="phone" placeholder="e.g. 082 123 4567" required>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="partner-role">Role</label>
+
+                    <select id="partner-role" name="role">
+                        <option value="partner">Partner</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+            </div>
+
+
+            <button class="primary-button" type="submit">
+                + Add Partner
+            </button>
+
+        </form>
+
+    </div>
+
+
+    {% if partners %}
+
+    <div class="setup-records">
+
+        {% for partner in partners %}
+
+        <div class="setup-record">
+
+            <div class="record-avatar">
+                {{ partner.name[0]|upper }}
+            </div>
+
+            <div class="record-main">
+                <strong>{{ partner.name }}</strong>
+                <span>{{ partner.phone }}</span>
+            </div>
+
+            <span class="status-pill">
+                {{ partner.role|capitalize }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+
+<!-- =====================================================
+     2. MONEY LOCATIONS
+===================================================== -->
+
+<section class="setup-section">
+
+    <div class="section-heading">
+
+        <div>
+            <span class="section-number">02</span>
+
+            <h3>Money locations</h3>
+
+            <p>
+                Tell TDM where TYDAL's money currently exists.
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="setup-card">
+
+        <form method="POST" action="{{ url_for('setup.add_money_account') }}">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="money-name">
+                        Location name
+                    </label>
+
+                    <input id="money-name" type="text" name="name" placeholder="e.g. Cash — Sihle" required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="money-type">
+                        Type
+                    </label>
+
+                    <select id="money-type" name="account_type" required>
+
+                        <option value="">
+                            Select type
+                        </option>
+
+                        <option value="cash">
+                            Cash
+                        </option>
+
+                        <option value="bank">
+                            Bank account
+                        </option>
+
+                        <option value="cash_send">
+                            Cash Send
+                        </option>
+
+                        <option value="other">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="money-owner">
+                        Held by
+                    </label>
+
+                    <select id="money-owner" name="owner_user_id">
+
+                        <option value="">
+                            Business / not assigned
+                        </option>
+
+                        {% for partner in partners %}
+
+                        <option value="{{ partner.id }}">
+                            {{ partner.name }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="money-opening">
+                        Current amount
+                    </label>
+
+                    <div class="input-prefix">
+                        <span>R</span>
+
+                        <input id="money-opening" type="number" name="opening_balance" step="0.01" min="0"
+                            placeholder="0.00">
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="money-date">
+                        As at date
+                    </label>
+
+                    <input id="money-date" type="date" name="transaction_date">
+
+                </div>
+
+            </div>
+
+
+            <div class="form-checkbox">
+
+                <input id="money-estimate" type="checkbox" name="is_estimate">
+
+                <label for="money-estimate">
+                    I am estimating this amount
+                </label>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="money-notes">
+                    Notes
+                </label>
+
+                <textarea id="money-notes" name="notes" rows="2"
+                    placeholder="Anything you remember about this money..."></textarea>
+
+            </div>
+
+
+            <button class="primary-button" type="submit">
+                + Add Money Location
+            </button>
+
+        </form>
+
+    </div>
+
+
+    {% if money_accounts %}
+
+    <div class="setup-records">
+
+        {% for account in money_accounts %}
+
+        <div class="setup-record">
+
+            <div class="record-icon money-icon">
+                R
+            </div>
+
+            <div class="record-main">
+
+                <strong>
+                    {{ account.name }}
+                </strong>
+
+                <span>
+                    {{ account.account_type|replace('_', ' ')|capitalize }}
+
+                    {% if account.owner %}
+                    · {{ account.owner.name }}
+                    {% endif %}
+                </span>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+
+<!-- =====================================================
+     3. STOCK LOCATIONS
+===================================================== -->
+
+<section class="setup-section">
+
+    <div class="section-heading">
+
+        <div>
+            <span class="section-number">03</span>
+
+            <h3>Stock locations</h3>
+
+            <p>
+                Record where TYDAL's physical stock is currently kept.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="setup-card">
+
+        <form method="POST" action="{{ url_for('setup.add_stock_location') }}">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="stock-location-name">
+                        Location name
+                    </label>
+
+                    <input id="stock-location-name" type="text" name="name" placeholder="e.g. Thabo's Stock" required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="stock-location-type">
+                        Location type
+                    </label>
+
+                    <select id="stock-location-type" name="location_type">
+
+                        <option value="partner">
+                            Partner
+                        </option>
+
+                        <option value="home">
+                            Home
+                        </option>
+
+                        <option value="storage">
+                            Storage
+                        </option>
+
+                        <option value="other">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="stock-owner">
+                        Person responsible</label>
+
+                    <select id="stock-owner" name="owner_user_id">
+
+                        <option value="">
+                            Not assigned
+                        </option>
+
+                        {% for partner in partners %}
+
+                        <option value="{{ partner.id }}">
+                            {{ partner.name }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <button class="primary-button" type="submit">
+                + Add Stock Location
+            </button>
+
+        </form>
+
+    </div>
+
+
+    {% if stock_locations %}
+
+    <div class="setup-records">
+
+        {% for location in stock_locations %}
+
+        <div class="setup-record">
+
+            <div class="record-icon stock-icon">
+                📦
+            </div>
+
+            <div class="record-main">
+
+                <strong>
+                    {{ location.name }}
+                </strong>
+
+                <span>
+
+                    {{ location.location_type|capitalize }}
+
+                    {% if location.owner %}
+                    · {{ location.owner.name }}
+                    {% endif %}
+
+                </span>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+
+<!-- =====================================================
+     4. OPENING STOCK
+===================================================== -->
+
+<section class="setup-section">
+
+    <div class="section-heading">
+
+        <div>
+
+            <span class="section-number">04</span>
+
+            <h3>Opening stock</h3>
+
+            <p>
+                Enter stock that TYDAL already owns today.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="setup-card">
+
+        <form method="POST" action="{{ url_for('setup.add_product') }}">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="product-name">
+                        Product
+                    </label>
+
+                    <input id="product-name" type="text" name="name" placeholder="e.g. Billabong Cargo Shorts" required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-brand">
+                        Brand
+                    </label>
+
+                    <input id="product-brand" type="text" name="brand" placeholder="e.g. Billabong">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-category">
+                        Category
+                    </label>
+
+                    <input id="product-category" type="text" name="category" placeholder="e.g. Shorts">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-size">
+                        Size
+                    </label>
+
+                    <input id="product-size" type="text" name="size" placeholder="e.g. 32">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-color">
+                        Colour
+                    </label>
+
+                    <input id="product-color" type="text" name="color" placeholder="e.g. Black">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-quantity">
+                        Quantity
+                    </label>
+
+                    <input id="product-quantity" type="number" name="quantity" min="0" step="1" value="0">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-cost">
+                        Cost per item
+                    </label>
+
+                    <div class="input-prefix">
+
+                        <span>R</span>
+
+                        <input id="product-cost" type="number" name="cost_price" min="0" step="0.01" placeholder="0.00">
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-selling">
+                        Selling price
+                    </label>
+
+                    <div class="input-prefix">
+
+                        <span>R</span>
+
+                        <input id="product-selling" type="number" name="selling_price" min="0" step="0.01"
+                            placeholder="0.00">
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-low-stock">
+                        Low-stock alert
+                    </label>
+
+                    <input id="product-low-stock" type="number" name="low_stock_level" min="0" step="1" value="2">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-supplier">
+                        Supplier
+                    </label>
+
+                    <input id="product-supplier" type="text" name="supplier" placeholder="e.g. Alibaba">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-location">
+                        Physical location
+                    </label>
+
+                    <select id="product-location" name="stock_location_id">
+
+                        <option value="">
+                            Select location
+                        </option>
+
+                        {% for location in stock_locations %}
+
+                        <option value="{{ location.id }}">
+                            {{ location.name }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="product-date">
+                        As at date
+                    </label>
+
+                    <input id="product-date" type="date" name="transaction_date">
+
+                </div>
+
+            </div>
+
+
+            <div class="form-checkbox">
+
+                <input id="product-estimate" type="checkbox" name="is_estimate">
+
+                <label for="product-estimate">
+                    Some of this information is estimated
+                </label>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="product-notes">
+                    Notes
+                </label>
+
+                <textarea id="product-notes" name="notes" rows="2"
+                    placeholder="Anything important about this stock..."></textarea>
+
+            </div>
+
+
+            <button class="primary-button" type="submit">
+                + Add Opening Stock
+            </button>
+
+        </form>
+
+    </div>
+
+
+    {% if products %}
+
+    <div class="setup-records">
+
+        {% for product in products %}
+
+        <div class="setup-record">
+
+            <div class="record-icon stock-icon">
+                📦
+            </div>
+
+            <div class="record-main">
+
+                <strong>
+                    {{ product.name }}
+                </strong>
+
+                <span>
+
+                    {% if product.brand %}
+                    {{ product.brand }} ·
+                    {% endif %}
+
+                    {{ product.quantity }} units
+
+                </span>
+
+            </div>
+
+            <div class="record-value">
+
+                R{{ "%.2f"|format(product.selling_price|float) }}
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+
+<!-- =====================================================
+     5. PARTNER MONEY HISTORY
+===================================================== -->
+
+<section class="setup-section">
+
+    <div class="section-heading">
+
+        <div>
+
+            <span class="section-number">05</span>
+
+            <h3>Partner money history</h3>
+
+            <p>
+                Capture money partners have put into or taken from TYDAL.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="setup-card">
+
+        <form method="POST" action="{{ url_for('setup.add_partner_transaction') }}">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="transaction-partner">
+                        Partner
+                    </label>
+
+                    <select id="transaction-partner" name="partner_id" required>
+
+                        <option value="">
+                            Select partner
+                        </option>
+
+                        {% for partner in partners %}
+
+                        <option value="{{ partner.id }}">
+                            {{ partner.name }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="transaction-type">
+                        Transaction type
+                    </label>
+
+                    <select id="transaction-type" name="transaction_type" required>
+
+                        <option value="">
+                            Select type
+                        </option>
+
+                        <option value="contribution">
+                            Contribution — helping TYDAL
+                        </option>
+
+                        <option value="advance">
+                            Advance — TYDAL owes partner
+                        </option>
+
+                        <option value="withdrawal">
+                            Withdrawal — partner took TYDAL money
+                        </option>
+
+                        <option value="personal_expense">
+                            Personal payment for TYDAL expense
+                        </option>
+
+                        <option value="repayment">
+                            Repayment
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="transaction-amount">
+                        Amount
+                    </label>
+
+                    <div class="input-prefix">
+
+                        <span>R</span>
+
+                        <input id="transaction-amount" type="number" name="amount" min="0.01" step="0.01"
+                            placeholder="0.00" required>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="transaction-money-location">
+                        TYDAL money location
+                    </label>
+
+                    <select id="transaction-money-location" name="money_account_id">
+
+                        <option value="">
+                            Not applicable
+                        </option>
+
+                        {% for account in money_accounts %}
+
+                        <option value="{{ account.id }}">
+                            {{ account.name }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="transaction-date">
+                        Date
+                    </label>
+
+                    <input id="transaction-date" type="date" name="transaction_date">
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="transaction-description">
+                    Description
+                </label>
+
+                <input id="transaction-description" type="text" name="description"
+                    placeholder="e.g. Money taken for family emergency">
+
+            </div>
+
+
+            <div class="form-checkbox">
+
+                <input id="transaction-estimate" type="checkbox" name="is_estimate">
+
+                <label for="transaction-estimate">
+                    I am estimating this amount or date
+                </label>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="transaction-notes">
+                    Notes
+                </label>
+
+                <textarea id="transaction-notes" name="notes" rows="2"
+                    placeholder="What do you remember about this transaction?"></textarea>
+
+            </div>
+
+
+            <button class="primary-button" type="submit">
+                + Record Partner Transaction
+            </button>
+
+        </form>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     SETUP NOTE
+===================================================== -->
+
+<div class="setup-note">
+
+    <div class="setup-note-icon">💡</div>
+
+    <div>
+
+        <strong>
+            Don't worry if you don't remember everything.
+        </strong>
+
+        <p>
+            TDM allows historical and estimated information so we can
+            establish TYDAL's current position honestly. We can correct
+            uncertain information later without pretending it was exact.
+        </p>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Purchases | TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Purchases</h1>
+        <p>
+            Supplier orders and stock coming into TYDAL.
+        </p>
+    </div>
+
+    <a href="{{ url_for('purchases.new') }}" class="primary-button">
+        + New Purchase
+    </a>
+
+</div>
+
+
+<!-- ======================================================
+     SUMMARY
+     ====================================================== -->
+
+<div class="purchase-summary-grid">
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Purchase Orders
+        </div>
+
+        <div class="stat-value">
+            {{ total_orders }}
+        </div>
+
+        <div class="stat-description">
+            Recent supplier orders
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Stock Purchased
+        </div>
+
+        <div class="stat-value">
+            {{ total_units }}
+        </div>
+
+        <div class="stat-description">
+            Units received
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Stock Spend
+        </div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(total_spent) }}
+        </div>
+
+        <div class="stat-description">
+            Value of completed purchases
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     PURCHASE HISTORY
+     ====================================================== -->
+
+<section class="purchases-section">
+
+    <div class="section-heading">
+
+        <div>
+            <h3>Purchase History</h3>
+
+            <p>
+                Stock orders recorded in TDM.
+            </p>
+        </div>
+
+    </div>
+
+
+    {% if purchases %}
+
+    <div class="purchase-list">
+
+        {% for purchase in purchases %}
+
+        <article class="purchase-card">
+
+            <div class="purchase-card-main">
+
+                <div class="purchase-icon">
+                    ↓
+                </div>
+
+                <div>
+
+                    <div class="purchase-reference">
+                        {{ purchase.purchase_number }}
+                    </div>
+
+                    <h4>
+                        {{ purchase.supplier }}
+                    </h4>
+
+                    <div class="purchase-meta">
+
+                        {{ purchase.purchase_date.strftime("%d %b %Y, %H:%M") }}
+
+                        {% if purchase.money_account %}
+                        · {{ purchase.money_account.name }}
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="purchase-card-side">
+
+                <strong>
+                    R{{ "%.2f"|format(purchase.total_amount) }}
+                </strong>
+
+                <span>
+                    {{ purchase.items|length }}
+                    item type{% if purchase.items|length != 1 %}s{% endif %}
+                </span>
+
+            </div>
+
+
+            <div class="purchase-items">
+
+                {% for item in purchase.items %}
+
+                <div class="purchase-item-row">
+
+                    <div>
+
+                        <strong>
+                            {{ item.product.name }}
+                        </strong>
+
+                        <span>
+                            {{ item.quantity }} ×
+                            R{{ "%.2f"|format(item.unit_cost) }}
+                        </span>
+
+                    </div>
+
+                    <strong>
+                        R{{ "%.2f"|format(item.line_total) }}
+                    </strong>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </article>
+
+        {% endfor %}
+
+    </div>
+
+
+    {% else %}
+
+    <div class="empty-state">
+
+        <h4>No purchases recorded yet</h4>
+
+        <p>
+            Your supplier and stock orders will appear here.
+        </p>
+
+        <a href="{{ url_for('purchases.new') }}" class="primary-button">
+            Record First Purchase
+        </a>
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+{% endblock %}
