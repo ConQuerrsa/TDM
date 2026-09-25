@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Activity — TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h2>Activity</h2>
+        <p>See what has been happening across TYDAL.</p>
+    </div>
+</div>
+
+
+<div class="dashboard-grid">
+
+    <div class="card">
+        <span class="card-label">Today</span>
+        <h2>{{ today_count }}</h2>
+        <p>Recorded actions</p>
+    </div>
+
+    <div class="card">
+        <span class="card-label">Last 7 Days</span>
+        <h2>{{ seven_day_count }}</h2>
+        <p>Business activities</p>
+    </div>
+
+    <div class="card">
+        <span class="card-label">Showing</span>
+        <h2>{{ activities|length }}</h2>
+        <p>Activity records</p>
+    </div>
+
+</div>
+
+
+<div class="card" style="margin-top: 24px;">
+
+    <div class="section-header">
+        <div>
+            <h3>Filter Activity</h3>
+            <p>Find actions by partner, type or period.</p>
+        </div>
+    </div>
+
+    <form method="GET">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Partner</label>
+
+                <select name="user">
+                    <option value="">Everyone</option>
+
+                    {% for user in users %}
+                    <option value="{{ user.id }}" {% if selected_user==user.id %}selected{% endif %}>
+                        {{ user.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+
+            <div class="form-group">
+                <label>Activity Type</label>
+
+                <select name="type">
+
+                    <option value="">Everything</option>
+
+                    <option value="sale" {% if selected_type=="sale" %}selected{% endif %}>
+                        Sales
+                    </option>
+
+                    <option value="expense" {% if selected_type=="expense" %}selected{% endif %}>
+                        Expenses
+                    </option>
+
+                    <option value="purchase" {% if selected_type=="purchase" %}selected{% endif %}>
+                        Purchases
+                    </option>
+
+                    <option value="transfer" {% if selected_type=="transfer" %}selected{% endif %}>
+                        Money Transfers
+                    </option>
+
+                    <option value="partner_transaction" {% if selected_type=="partner_transaction" %}selected{% endif
+                        %}>
+                        Partner Money
+                    </option>
+
+                    <option value="opening_balance" {% if selected_type=="opening_balance" %}selected{% endif %}>
+                        Opening Records
+                    </option>
+
+                    <option value="adjustment" {% if selected_type=="adjustment" %}selected{% endif %}>
+                        Adjustments
+                    </option>
+
+                </select>
+            </div>
+
+
+            <div class="form-group">
+                <label>Period</label>
+
+                <select name="period">
+
+                    <option value="all" {% if selected_period=="all" %}selected{% endif %}>
+                        All Time
+                    </option>
+
+                    <option value="today" {% if selected_period=="today" %}selected{% endif %}>
+                        Today
+                    </option>
+
+                    <option value="7days" {% if selected_period=="7days" %}selected{% endif %}>
+                        Last 7 Days
+                    </option>
+
+                    <option value="30days" {% if selected_period=="30days" %}selected{% endif %}>
+                        Last 30 Days
+                    </option>
+
+                </select>
+            </div>
+
+        </div>
+
+        <div style="margin-top: 18px;">
+            <button class="btn btn-primary" type="submit">
+                Apply Filters
+            </button>
+
+            <a href="{{ url_for('activity.index') }}" class="btn">
+                Clear
+            </a>
+        </div>
+
+    </form>
+
+</div>
+
+
+<div class="card" style="margin-top: 24px;">
+
+    <div class="section-header">
+        <div>
+            <h3>TYDAL Activity Feed</h3>
+            <p>Newest activity appears first.</p>
+        </div>
+    </div>
+
+
+    {% if activities %}
+
+    <div class="activity-feed">
+
+        {% for item in activities %}
+
+        <div style="
+            display:flex;
+            gap:14px;
+            padding:18px 0;
+            border-bottom:1px solid rgba(128,128,128,.18);
+        ">
+
+            <div class="user-avatar" style="flex-shrink:0;">
+                {{ item.created_by.name[0]|upper }}
+            </div>
+
+
+            <div style="flex:1; min-width:0;">
+
+                <div style="margin-bottom:5px;">
+
+                    <strong>{{ item.created_by.name }}</strong>
+
+                    {% if item.source_type == "sale" %}
+                    recorded a sale
+
+                    {% elif item.source_type == "expense" %}
+                    recorded an expense
+
+                    {% elif item.source_type == "purchase" %}
+                    recorded a stock purchase
+
+                    {% elif item.source_type == "transfer" %}
+                    moved business money
+
+                    {% elif item.source_type == "partner_transaction" %}
+                    recorded partner money
+
+                    {% elif item.source_type == "opening_balance" %}
+                    recorded an opening balance
+
+                    {% elif item.source_type == "adjustment" %}
+                    recorded an adjustment
+
+                    {% else %}
+                    recorded {{ item.transaction_type|replace("_", " ") }}
+                    {% endif %}
+
+                    — <strong>R{{ "%.2f"|format(item.amount) }}</strong>
+
+                </div>
+
+
+                <div class="muted">
+                    {{ item.description }}
+                </div>
+
+
+                {% if item.from_account or item.to_account %}
+
+                <div class="muted" style="margin-top:5px;">
+
+                    {% if item.from_account %}
+                    {{ item.from_account.name }}
+                    {% endif %}
+
+                    {% if item.from_account and item.to_account %}
+                    →
+                    {% endif %}
+
+                    {% if item.to_account %}
+                    {{ item.to_account.name }}
+                    {% endif %}
+
+                </div>
+
+                {% endif %}
+
+
+                {% if item.is_historical or item.is_estimate %}
+
+                <div style="margin-top:7px;">
+
+                    {% if item.is_historical %}
+                    <span class="muted">Historical record</span>
+                    {% endif %}
+
+                    {% if item.is_estimate %}
+                    <span class="muted"> · Estimated</span>
+                    {% endif %}
+
+                </div>
+
+                {% endif %}
+
+
+                <div class="muted" style="margin-top:7px;">
+                    {{ item.transaction_date.strftime("%d %b %Y · %H:%M") }}
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div style="padding:30px 0; text-align:center;">
+        <h3>No activity found</h3>
+        <p class="muted">
+            Nothing matches the selected filters yet.
+        </p>
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

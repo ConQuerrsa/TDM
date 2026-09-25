@@ -1,47 +1,472 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TDM — Login</title>
+
+    <title>TDM — Sign In</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Inter, Arial, sans-serif;
+            background:
+                radial-gradient(circle at 15% 15%,
+                    rgba(255, 255, 255, .07),
+                    transparent 28%),
+                linear-gradient(145deg, #090909, #111 55%, #171717);
+            color: #fff;
+        }
+
+        .login-page {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+        }
+
+        /* LEFT SIDE */
+
+        .login-identity {
+            padding: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-identity::after {
+            content: "";
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border: 1px solid rgba(255, 255, 255, .06);
+            border-radius: 50%;
+            right: -230px;
+            bottom: -180px;
+        }
+
+        .login-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .login-logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            color: #080808;
+            font-size: 25px;
+            font-weight: 900;
+        }
+
+        .login-brand strong {
+            display: block;
+            font-size: 24px;
+            letter-spacing: -.5px;
+        }
+
+        .login-brand span {
+            display: block;
+            color: #999;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .identity-message {
+            max-width: 620px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .identity-label {
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #8d8d8d;
+        }
+
+        .identity-message h1 {
+            font-size: clamp(42px, 6vw, 78px);
+            line-height: .98;
+            letter-spacing: -4px;
+            margin: 18px 0 24px;
+        }
+
+        .identity-message p {
+            max-width: 480px;
+            font-size: 17px;
+            line-height: 1.7;
+            color: #999;
+        }
+
+        .identity-footer {
+            color: #666;
+            font-size: 12px;
+        }
+
+
+        /* RIGHT SIDE */
+
+        .login-panel {
+            background: #f5f5f3;
+            color: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 50px;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 430px;
+        }
+
+        .mobile-brand {
+            display: none;
+        }
+
+        .login-box h2 {
+            font-size: 34px;
+            letter-spacing: -1.5px;
+            margin: 0 0 8px;
+        }
+
+        .login-subtitle {
+            color: #777;
+            margin: 0 0 35px;
+            line-height: 1.5;
+        }
+
+        .login-flash {
+            padding: 13px 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            background: #e7e7e4;
+            font-size: 14px;
+        }
+
+        .login-flash.error {
+            background: #f7dddd;
+            color: #8b2020;
+        }
+
+        .login-flash.success {
+            background: #def1e3;
+            color: #246c36;
+        }
+
+        .login-field {
+            margin-bottom: 20px;
+        }
+
+        .login-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .login-field input {
+            width: 100%;
+            height: 52px;
+            border: 1px solid #d8d8d3;
+            border-radius: 12px;
+            background: #fff;
+            color: #111;
+            padding: 0 15px;
+            font-size: 16px;
+            outline: none;
+            transition: .2s ease;
+        }
+
+        .login-field input:focus {
+            border-color: #111;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, .06);
+        }
+
+        .password-wrap {
+            position: relative;
+        }
+
+        .password-wrap input {
+            padding-right: 75px;
+        }
+
+        .show-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .login-button {
+            width: 100%;
+            height: 54px;
+            margin-top: 8px;
+            border: 0;
+            border-radius: 12px;
+            background: #111;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: .2s ease;
+        }
+
+        .login-button:hover {
+            transform: translateY(-1px);
+            background: #252525;
+        }
+
+        .secure-note {
+            margin-top: 22px;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+        }
+
+
+        /* MOBILE */
+
+        @media (max-width: 850px) {
+
+            .login-page {
+                display: block;
+                background: #f5f5f3;
+            }
+
+            .login-identity {
+                display: none;
+            }
+
+            .login-panel {
+                min-height: 100vh;
+                padding: 28px 22px;
+            }
+
+            .login-box {
+                max-width: 500px;
+            }
+
+            .mobile-brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 55px;
+            }
+
+            .mobile-logo {
+                width: 44px;
+                height: 44px;
+                border-radius: 13px;
+                background: #111;
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 21px;
+                font-weight: 900;
+            }
+
+            .mobile-brand strong {
+                display: block;
+                font-size: 20px;
+            }
+
+            .mobile-brand span {
+                color: #888;
+                font-size: 11px;
+            }
+
+            .login-box h2 {
+                font-size: 30px;
+            }
+        }
+    </style>
 </head>
+
 
 <body>
 
-    <main>
-        <h1>TDM</h1>
-        <p>TYDAL Business Manager</p>
+    <div class="login-page">
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for category, message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        {% endwith %}
+        <!-- TYDAL IDENTITY -->
+        <section class="login-identity">
 
-        <form method="POST">
+            <div class="login-brand">
 
-            <label for="phone">Phone number</label>
-            <input
-                type="text"
-                id="phone"
-                name="phone"
-                required
-                autocomplete="username"
-            >
+                <div class="login-logo">T</div>
 
-            <label for="password">Password</label>
-            <input
-                type="password"
-                id="password"
-                name="password"
-                required
-                autocomplete="current-password"
-            >
+                <div>
+                    <strong>TDM</strong>
+                    <span>TYDAL Business Manager</span>
+                </div>
 
-            <button type="submit">Sign in</button>
+            </div>
 
-        </form>
-    </main>
+
+            <div class="identity-message">
+
+                <span class="identity-label">
+                    Built for TYDAL
+                </span>
+
+                <h1>
+                    Know the<br>
+                    business.
+                </h1>
+
+                <p>
+                    Sales, stock, money and partner activity —
+                    one place for the TYDAL team to know exactly
+                    where the business stands.
+                </p>
+
+            </div>
+
+
+            <div class="identity-footer">
+                TYDAL · Durban, South Africa
+            </div>
+
+        </section>
+
+
+        <!-- LOGIN -->
+        <section class="login-panel">
+
+            <div class="login-box">
+
+                <div class="mobile-brand">
+
+                    <div class="mobile-logo">T</div>
+
+                    <div>
+                        <strong>TDM</strong>
+                        <span>TYDAL Business Manager</span>
+                    </div>
+
+                </div>
+
+
+                <h2>Welcome back.</h2>
+
+                <p class="login-subtitle">
+                    Sign in to your TYDAL workspace.
+                </p>
+
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+
+                {% if messages %}
+
+                {% for category, message in messages %}
+
+                <div class="login-flash {{ category }}">
+                    {{ message }}
+                </div>
+
+                {% endfor %}
+
+                {% endif %}
+
+                {% endwith %}
+
+
+                <form method="POST">
+
+                    <div class="login-field">
+
+                        <label for="phone">
+                            Phone number
+                        </label>
+
+                        <input type="tel" id="phone" name="phone" placeholder="e.g. 071 234 5678" required autofocus
+                            autocomplete="username">
+
+                    </div>
+
+
+                    <div class="login-field">
+
+                        <label for="password">
+                            Password
+                        </label>
+
+                        <div class="password-wrap">
+
+                            <input type="password" id="password" name="password" placeholder="Enter your password"
+                                required autocomplete="current-password">
+
+                            <button type="button" class="show-password" id="showPassword">
+                                SHOW
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <button type="submit" class="login-button">
+                        Sign in to TDM
+                    </button>
+
+                </form>
+
+
+                <div class="secure-note">
+                    Private workspace for the TYDAL team.
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <script>
+        const passwordInput =
+            document.getElementById("password");
+
+        const showPassword =
+            document.getElementById("showPassword");
+
+        showPassword.addEventListener("click", function () {
+
+            const showing =
+                passwordInput.type === "text";
+
+            passwordInput.type =
+                showing ? "password" : "text";
+
+            showPassword.textContent =
+                showing ? "SHOW" : "HIDE";
+
+        });
+    </script>
 
 </body>
+
 </html>
