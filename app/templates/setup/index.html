@@ -909,6 +909,25 @@ TDM — TYDAL Setup
                 + Record Partner Transaction
             </button>
 
+            {% if current_user.role == "admin" %}
+            <div class="setup-reset-section">
+                <h3>Restart Business Setup</h3>
+
+                <p>
+                    Clears the opening money, opening stock and opening partner
+                    history entered during setup. Team accounts will not be deleted.
+                </p>
+
+                <form method="POST" action="{{ url_for('setup.reset_setup') }}" onsubmit="return confirm(
+            'Reset Business Setup? Opening money, stock and partner setup records will be cleared. Team accounts will remain.'
+        );">
+                    <button type="submit" class="btn btn-danger">
+                        Reset Business Setup
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
         </form>
 
     </div>

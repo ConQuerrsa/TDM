@@ -11,6 +11,38 @@ from app.models import User
 team = Blueprint("team", __name__, url_prefix="/team")
 
 
+def normalize_phone(phone):
+    """
+    Store South African numbers consistently.
+
+    0684704656       -> 27684704656
+    +27684704656     -> 27684704656
+    +27 68 470 4656  -> 27684704656
+    """
+    if not phone:
+        return ""
+
+    digits = "".join(char for char in phone if char.isdigit())
+
+    if len(digits) == 10 and digits.startswith("0"):
+        digits = "27" + digits[1:]
+
+    return digits
+
+
+def find_user_by_phone(phone):
+    target = normalize_phone(phone)
+
+    return next(
+        (
+            user
+            for user in User.query.all()
+            if normalize_phone(user.phone) == target
+        ),
+        None,
+    )
+
+
 def admin_required(view_function):
     @wraps(view_function)
     def wrapped_view(*args, **kwargs):
@@ -53,6 +85,12 @@ def create():
         flash("Name, phone number and password are required.", "error")
         return redirect(url_for("team.index"))
 
+    normalized_phone = normalize_phone(phone)
+
+    if not normalized_phone:
+        flash("Enter a valid phone number.", "error")
+        return redirect(url_for("team.index"))
+
     if role not in {"admin", "partner"}:
         flash("Invalid account role.", "error")
         return redirect(url_for("team.index"))
@@ -61,15 +99,13 @@ def create():
         flash("Temporary password must contain at least 8 characters.", "error")
         return redirect(url_for("team.index"))
 
-    existing_user = User.query.filter_by(phone=phone).first()
-
-    if existing_user:
+    if find_user_by_phone(normalized_phone):
         flash("That phone number already belongs to a TDM account.", "error")
         return redirect(url_for("team.index"))
 
     user = User(
         name=name,
-        phone=phone,
+        phone=normalized_phone,
         password_hash=generate_password_hash(password),
         role=role,
         is_active=True,
