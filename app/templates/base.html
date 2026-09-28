@@ -81,10 +81,15 @@
                     <span>Activity</span>
                 </a>
 
+                {% if not business_setup_completed %}
+
                 <a href="{{ url_for('setup.index') }}" class="nav-link">
                     <span>⚙️</span>
                     <span>Business Setup</span>
                 </a>
+                {% endif %}
+
+
 
             </nav>
 

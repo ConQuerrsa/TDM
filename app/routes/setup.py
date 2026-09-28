@@ -60,6 +60,16 @@ def redirect_setup():
 @login_required
 def index():
 
+    settings = BusinessSettings.query.first()
+
+    # Business Setup is only available before TYDAL goes live.
+    if settings and settings.setup_completed:
+        flash(
+            "TYDAL Business Setup has already been completed.",
+            "info"
+        )
+        return redirect(url_for("main.home"))
+
     partners = (
         User.query
         .order_by(User.name)

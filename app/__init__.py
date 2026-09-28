@@ -48,7 +48,17 @@ def create_app():
     app.register_blueprint(team)
     app.register_blueprint(activity)
 
-   
+    @app.context_processor
+    def inject_business_setup_status():
+        from app.models import BusinessSettings
+
+        settings = BusinessSettings.query.first()
+
+        return {
+            "business_setup_completed": bool(
+                settings and settings.setup_completed
+            )
+        }
 
     return app
 
