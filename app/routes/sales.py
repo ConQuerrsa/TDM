@@ -362,7 +362,6 @@ def new_sale():
 
         db.session.add(sale)
 
-        # Flush gives us sale.id without committing.
         db.session.flush()
 
 
@@ -404,9 +403,7 @@ def new_sale():
             from_location_id=stock_location.id,
             to_location_id=None,
             reference=sale.sale_number,
-            notes=(
-                f"Sold by {current_user.name}"
-            ),
+            notes=f"Sold by {current_user.name}",
             movement_date=sale.sale_date,
             created_by_id=current_user.id
         )
@@ -469,3 +466,167 @@ def new_sale():
     return redirect(
         url_for("sales.index")
     )
+
+
+# ============================================================
+# TEMPORARY DEMO SALE CLEANUP
+# ============================================================
+
+@sales.route("/cleanup-demo-sale", methods=["POST"])
+@login_required
+def cleanup_demo_sale():
+    """
+    TEMPORARY commissioning tool.
+
+    Removes the known R350 demo sale made before TYDAL went live
+    and restores the stock that the demo sale deducted.
+
+    Remove this route after it has been used successfully.
+    """
+
+    if current_user.role != "admin":
+        flash(
+            "Only an administrator can perform setup cleanup.",
+            "error"
+        )
+        return redirect(url_for("sales.index"))
+
+
+    # --------------------------------------------------------
+    # Find candidate R350 completed sales.
+    #
+    # We deliberately refuse to continue unless EXACTLY ONE
+    # exists. This prevents us from accidentally deleting a
+    # genuine R350 sale.
+    # --------------------------------------------------------
+
+    demo_sales = (
+        Sale.query
+        .filter(
+            Sale.status == "completed",
+            Sale.total_amount == Decimal("350.00")
+        )
+        .all()
+    )
+
+
+    if len(demo_sales) == 0:
+        flash(
+            "No R350 demo sale was found. Nothing was changed.",
+            "error"
+        )
+        return redirect(url_for("sales.index"))
+
+
+    if len(demo_sales) > 1:
+        flash(
+            "More than one R350 sale exists. Cleanup stopped "
+            "to protect real business data.",
+            "error"
+        )
+        return redirect(url_for("sales.index"))
+
+
+    sale = demo_sales[0]
+
+
+    try:
+
+        sale_items = (
+            SaleItem.query
+            .filter_by(sale_id=sale.id)
+            .all()
+        )
+
+
+        # ----------------------------------------------------
+        # Restore stock deducted by the demo sale
+        # ----------------------------------------------------
+
+        for item in sale_items:
+
+            product = db.session.get(
+                Product,
+                item.product_id
+            )
+
+            holding = StockHolding.query.filter_by(
+                product_id=item.product_id,
+                stock_location_id=item.stock_location_id
+            ).first()
+
+
+            if not product or not holding:
+                raise RuntimeError(
+                    "Could not safely restore the demo stock."
+                )
+
+
+            product.quantity += item.quantity
+            holding.quantity += item.quantity
+
+
+        # ----------------------------------------------------
+        # Delete ledger entry created by this sale
+        # ----------------------------------------------------
+
+        FinancialTransaction.query.filter_by(
+            source_type="sale",
+            source_id=sale.id
+        ).delete(
+            synchronize_session=False
+        )
+
+
+        # ----------------------------------------------------
+        # Delete stock movement created by this sale
+        # ----------------------------------------------------
+
+        StockMovement.query.filter_by(
+            movement_type="sale",
+            reference=sale.sale_number
+        ).delete(
+            synchronize_session=False
+        )
+
+
+        # ----------------------------------------------------
+        # Delete sale items
+        # ----------------------------------------------------
+
+        SaleItem.query.filter_by(
+            sale_id=sale.id
+        ).delete(
+            synchronize_session=False
+        )
+
+
+        # ----------------------------------------------------
+        # Finally delete sale itself
+        # ----------------------------------------------------
+
+        db.session.delete(sale)
+
+
+        db.session.commit()
+
+
+    except Exception:
+
+        db.session.rollback()
+
+        flash(
+            "Demo cleanup stopped. No changes were committed.",
+            "error"
+        )
+
+        return redirect(url_for("sales.index"))
+
+
+    flash(
+        "Demo R350 sale removed successfully. "
+        "Its stock and money effects were restored.",
+        "success"
+    )
+
+    return redirect(url_for("sales.index"))

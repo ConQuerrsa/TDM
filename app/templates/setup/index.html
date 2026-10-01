@@ -8,18 +8,14 @@ TDM — TYDAL Setup
 {% block content %}
 
 <div class="page-header setup-header">
-
     <div>
         <span class="eyebrow">TYDAL INITIALIZATION</span>
-
         <h2>Set up TYDAL</h2>
-
         <p>
-            Establish what TYDAL already has before TDM starts tracking
-            everything going forward.
+            Review TYDAL's opening position before TDM begins
+            normal business operations.
         </p>
     </div>
-
 </div>
 
 
@@ -33,49 +29,9 @@ TDM — TYDAL Setup
         <div>
             <span class="section-number">01</span>
             <h3>Partners</h3>
-            <p>Add the people who own and operate TYDAL.</p>
+            <p>TYDAL team members currently registered in TDM.</p>
         </div>
     </div>
-
-
-    <div class="setup-card">
-
-        <form method="POST" action="{{ url_for('setup.add_partner') }}">
-
-            <div class="form-grid">
-
-                <div class="form-group">
-                    <label for="partner-name">Full name</label>
-                    <input id="partner-name" type="text" name="name" placeholder="e.g. John Doe" required>
-                </div>
-
-
-                <div class="form-group">
-                    <label for="partner-phone">Phone number</label>
-                    <input id="partner-phone" type="text" name="phone" placeholder="e.g. 082 123 4567" required>
-                </div>
-
-
-                <div class="form-group">
-                    <label for="partner-role">Role</label>
-
-                    <select id="partner-role" name="role">
-                        <option value="partner">Partner</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-
-            </div>
-
-
-            <button class="primary-button" type="submit">
-                + Add Partner
-            </button>
-
-        </form>
-
-    </div>
-
 
     {% if partners %}
 
@@ -95,7 +51,7 @@ TDM — TYDAL Setup
             </div>
 
             <span class="status-pill">
-                {{ partner.role|capitalize }}
+                TYDAL Partner
             </span>
 
         </div>
@@ -109,7 +65,6 @@ TDM — TYDAL Setup
 </section>
 
 
-
 <!-- =====================================================
      2. MONEY LOCATIONS
 ===================================================== -->
@@ -117,77 +72,54 @@ TDM — TYDAL Setup
 <section class="setup-section">
 
     <div class="section-heading">
-
         <div>
             <span class="section-number">02</span>
-
             <h3>Money locations</h3>
-
-            <p>
-                Tell TDM where TYDAL's money currently exists.
-            </p>
+            <p>Where TYDAL's opening money currently exists.</p>
         </div>
-
     </div>
 
 
     <div class="setup-card">
 
-        <form method="POST" action="{{ url_for('setup.add_money_account') }}">
+        <form method="POST"
+              action="{{ url_for('setup.add_money_account') }}">
 
             <div class="form-grid">
 
                 <div class="form-group">
+                    <label for="money-name">Location name</label>
 
-                    <label for="money-name">
-                        Location name
-                    </label>
-
-                    <input id="money-name" type="text" name="name" placeholder="e.g. Cash — Sihle" required>
-
+                    <input id="money-name"
+                           type="text"
+                           name="name"
+                           placeholder="e.g. Cash with Manqoba"
+                           required>
                 </div>
 
 
                 <div class="form-group">
+                    <label for="money-type">Type</label>
 
-                    <label for="money-type">
-                        Type
-                    </label>
+                    <select id="money-type"
+                            name="account_type"
+                            required>
 
-                    <select id="money-type" name="account_type" required>
-
-                        <option value="">
-                            Select type
-                        </option>
-
-                        <option value="cash">
-                            Cash
-                        </option>
-
-                        <option value="bank">
-                            Bank account
-                        </option>
-
-                        <option value="cash_send">
-                            Cash Send
-                        </option>
-
-                        <option value="other">
-                            Other
-                        </option>
+                        <option value="">Select type</option>
+                        <option value="cash">Cash</option>
+                        <option value="bank">Bank account</option>
+                        <option value="cash_send">Cash Send</option>
+                        <option value="other">Other</option>
 
                     </select>
-
                 </div>
 
 
                 <div class="form-group">
+                    <label for="money-owner">Held by</label>
 
-                    <label for="money-owner">
-                        Held by
-                    </label>
-
-                    <select id="money-owner" name="owner_user_id">
+                    <select id="money-owner"
+                            name="owner_user_id">
 
                         <option value="">
                             Business / not assigned
@@ -202,35 +134,35 @@ TDM — TYDAL Setup
                         {% endfor %}
 
                     </select>
-
                 </div>
 
 
                 <div class="form-group">
-
                     <label for="money-opening">
                         Current amount
                     </label>
 
                     <div class="input-prefix">
+
                         <span>R</span>
 
-                        <input id="money-opening" type="number" name="opening_balance" step="0.01" min="0"
-                            placeholder="0.00">
+                        <input id="money-opening"
+                               type="number"
+                               name="opening_balance"
+                               step="0.01"
+                               min="0"
+                               placeholder="0.00">
 
                     </div>
-
                 </div>
 
 
                 <div class="form-group">
+                    <label for="money-date">As at date</label>
 
-                    <label for="money-date">
-                        As at date
-                    </label>
-
-                    <input id="money-date" type="date" name="transaction_date">
-
+                    <input id="money-date"
+                           type="date"
+                           name="transaction_date">
                 </div>
 
             </div>
@@ -238,7 +170,9 @@ TDM — TYDAL Setup
 
             <div class="form-checkbox">
 
-                <input id="money-estimate" type="checkbox" name="is_estimate">
+                <input id="money-estimate"
+                       type="checkbox"
+                       name="is_estimate">
 
                 <label for="money-estimate">
                     I am estimating this amount
@@ -249,12 +183,12 @@ TDM — TYDAL Setup
 
             <div class="form-group">
 
-                <label for="money-notes">
-                    Notes
-                </label>
+                <label for="money-notes">Notes</label>
 
-                <textarea id="money-notes" name="notes" rows="2"
-                    placeholder="Anything you remember about this money..."></textarea>
+                <textarea id="money-notes"
+                          name="notes"
+                          rows="2"
+                          placeholder="Anything important about this opening money..."></textarea>
 
             </div>
 
@@ -282,9 +216,7 @@ TDM — TYDAL Setup
 
             <div class="record-main">
 
-                <strong>
-                    {{ account.name }}
-                </strong>
+                <strong>{{ account.name }}</strong>
 
                 <span>
                     {{ account.account_type|replace('_', ' ')|capitalize }}
@@ -307,7 +239,6 @@ TDM — TYDAL Setup
 </section>
 
 
-
 <!-- =====================================================
      3. STOCK LOCATIONS
 ===================================================== -->
@@ -315,24 +246,21 @@ TDM — TYDAL Setup
 <section class="setup-section">
 
     <div class="section-heading">
-
         <div>
             <span class="section-number">03</span>
-
             <h3>Stock locations</h3>
 
             <p>
-                Record where TYDAL's physical stock is currently kept.
+                Where TYDAL's physical stock is currently kept.
             </p>
-
         </div>
-
     </div>
 
 
     <div class="setup-card">
 
-        <form method="POST" action="{{ url_for('setup.add_stock_location') }}">
+        <form method="POST"
+              action="{{ url_for('setup.add_stock_location') }}">
 
             <div class="form-grid">
 
@@ -342,7 +270,11 @@ TDM — TYDAL Setup
                         Location name
                     </label>
 
-                    <input id="stock-location-name" type="text" name="name" placeholder="e.g. Thabo's Stock" required>
+                    <input id="stock-location-name"
+                           type="text"
+                           name="name"
+                           placeholder="e.g. Stock with Manqoba"
+                           required>
 
                 </div>
 
@@ -353,23 +285,13 @@ TDM — TYDAL Setup
                         Location type
                     </label>
 
-                    <select id="stock-location-type" name="location_type">
+                    <select id="stock-location-type"
+                            name="location_type">
 
-                        <option value="partner">
-                            Partner
-                        </option>
-
-                        <option value="home">
-                            Home
-                        </option>
-
-                        <option value="storage">
-                            Storage
-                        </option>
-
-                        <option value="other">
-                            Other
-                        </option>
+                        <option value="partner">Partner</option>
+                        <option value="home">Home</option>
+                        <option value="storage">Storage</option>
+                        <option value="other">Other</option>
 
                     </select>
 
@@ -379,13 +301,13 @@ TDM — TYDAL Setup
                 <div class="form-group">
 
                     <label for="stock-owner">
-                        Person responsible</label>
+                        Person responsible
+                    </label>
 
-                    <select id="stock-owner" name="owner_user_id">
+                    <select id="stock-owner"
+                            name="owner_user_id">
 
-                        <option value="">
-                            Not assigned
-                        </option>
+                        <option value="">Not assigned</option>
 
                         {% for partner in partners %}
 
@@ -425,9 +347,7 @@ TDM — TYDAL Setup
 
             <div class="record-main">
 
-                <strong>
-                    {{ location.name }}
-                </strong>
+                <strong>{{ location.name }}</strong>
 
                 <span>
 
@@ -452,7 +372,6 @@ TDM — TYDAL Setup
 </section>
 
 
-
 <!-- =====================================================
      4. OPENING STOCK
 ===================================================== -->
@@ -460,7 +379,6 @@ TDM — TYDAL Setup
 <section class="setup-section">
 
     <div class="section-heading">
-
         <div>
 
             <span class="section-number">04</span>
@@ -468,19 +386,20 @@ TDM — TYDAL Setup
             <h3>Opening stock</h3>
 
             <p>
-                Enter stock that TYDAL already owns today.
+                Stock TYDAL already owns before normal TDM operations begin.
             </p>
 
         </div>
-
     </div>
 
 
     <div class="setup-card">
 
-        <form method="POST" action="{{ url_for('setup.add_product') }}">
+        <form method="POST"
+              action="{{ url_for('setup.add_product') }}">
 
             <div class="form-grid">
+
 
                 <div class="form-group">
 
@@ -488,7 +407,11 @@ TDM — TYDAL Setup
                         Product
                     </label>
 
-                    <input id="product-name" type="text" name="name" placeholder="e.g. Billabong Cargo Shorts" required>
+                    <input id="product-name"
+                           type="text"
+                           name="name"
+                           placeholder="e.g. Billabong T-shirt"
+                           required>
 
                 </div>
 
@@ -499,7 +422,10 @@ TDM — TYDAL Setup
                         Brand
                     </label>
 
-                    <input id="product-brand" type="text" name="brand" placeholder="e.g. Billabong">
+                    <input id="product-brand"
+                           type="text"
+                           name="brand"
+                           placeholder="e.g. Billabong">
 
                 </div>
 
@@ -510,7 +436,10 @@ TDM — TYDAL Setup
                         Category
                     </label>
 
-                    <input id="product-category" type="text" name="category" placeholder="e.g. Shorts">
+                    <input id="product-category"
+                           type="text"
+                           name="category"
+                           placeholder="e.g. T-shirt">
 
                 </div>
 
@@ -521,7 +450,10 @@ TDM — TYDAL Setup
                         Size
                     </label>
 
-                    <input id="product-size" type="text" name="size" placeholder="e.g. 32">
+                    <input id="product-size"
+                           type="text"
+                           name="size"
+                           placeholder="e.g. M">
 
                 </div>
 
@@ -532,7 +464,10 @@ TDM — TYDAL Setup
                         Colour
                     </label>
 
-                    <input id="product-color" type="text" name="color" placeholder="e.g. Black">
+                    <input id="product-color"
+                           type="text"
+                           name="color"
+                           placeholder="e.g. White">
 
                 </div>
 
@@ -543,7 +478,12 @@ TDM — TYDAL Setup
                         Quantity
                     </label>
 
-                    <input id="product-quantity" type="number" name="quantity" min="0" step="1" value="0">
+                    <input id="product-quantity"
+                           type="number"
+                           name="quantity"
+                           min="0"
+                           step="1"
+                           value="0">
 
                 </div>
 
@@ -558,7 +498,12 @@ TDM — TYDAL Setup
 
                         <span>R</span>
 
-                        <input id="product-cost" type="number" name="cost_price" min="0" step="0.01" placeholder="0.00">
+                        <input id="product-cost"
+                               type="number"
+                               name="cost_price"
+                               min="0"
+                               step="0.01"
+                               placeholder="0.00">
 
                     </div>
 
@@ -575,8 +520,12 @@ TDM — TYDAL Setup
 
                         <span>R</span>
 
-                        <input id="product-selling" type="number" name="selling_price" min="0" step="0.01"
-                            placeholder="0.00">
+                        <input id="product-selling"
+                               type="number"
+                               name="selling_price"
+                               min="0"
+                               step="0.01"
+                               placeholder="0.00">
 
                     </div>
 
@@ -589,7 +538,12 @@ TDM — TYDAL Setup
                         Low-stock alert
                     </label>
 
-                    <input id="product-low-stock" type="number" name="low_stock_level" min="0" step="1" value="2">
+                    <input id="product-low-stock"
+                           type="number"
+                           name="low_stock_level"
+                           min="0"
+                           step="1"
+                           value="2">
 
                 </div>
 
@@ -600,7 +554,10 @@ TDM — TYDAL Setup
                         Supplier
                     </label>
 
-                    <input id="product-supplier" type="text" name="supplier" placeholder="e.g. Alibaba">
+                    <input id="product-supplier"
+                           type="text"
+                           name="supplier"
+                           placeholder="e.g. Boardriders">
 
                 </div>
 
@@ -611,7 +568,8 @@ TDM — TYDAL Setup
                         Physical location
                     </label>
 
-                    <select id="product-location" name="stock_location_id">
+                    <select id="product-location"
+                            name="stock_location_id">
 
                         <option value="">
                             Select location
@@ -636,7 +594,9 @@ TDM — TYDAL Setup
                         As at date
                     </label>
 
-                    <input id="product-date" type="date" name="transaction_date">
+                    <input id="product-date"
+                           type="date"
+                           name="transaction_date">
 
                 </div>
 
@@ -645,7 +605,9 @@ TDM — TYDAL Setup
 
             <div class="form-checkbox">
 
-                <input id="product-estimate" type="checkbox" name="is_estimate">
+                <input id="product-estimate"
+                       type="checkbox"
+                       name="is_estimate">
 
                 <label for="product-estimate">
                     Some of this information is estimated
@@ -660,8 +622,10 @@ TDM — TYDAL Setup
                     Notes
                 </label>
 
-                <textarea id="product-notes" name="notes" rows="2"
-                    placeholder="Anything important about this stock..."></textarea>
+                <textarea id="product-notes"
+                          name="notes"
+                          rows="2"
+                          placeholder="Anything important about this stock..."></textarea>
 
             </div>
 
@@ -689,9 +653,7 @@ TDM — TYDAL Setup
 
             <div class="record-main">
 
-                <strong>
-                    {{ product.name }}
-                </strong>
+                <strong>{{ product.name }}</strong>
 
                 <span>
 
@@ -705,10 +667,9 @@ TDM — TYDAL Setup
 
             </div>
 
+
             <div class="record-value">
-
                 R{{ "%.2f"|format(product.selling_price|float) }}
-
             </div>
 
         </div>
@@ -722,9 +683,8 @@ TDM — TYDAL Setup
 </section>
 
 
-
 <!-- =====================================================
-     5. PARTNER MONEY HISTORY
+     5. PARTNER OPENING POSITIONS
 ===================================================== -->
 
 <section class="setup-section">
@@ -735,10 +695,11 @@ TDM — TYDAL Setup
 
             <span class="section-number">05</span>
 
-            <h3>Partner money history</h3>
+            <h3>Partner opening positions</h3>
 
             <p>
-                Capture money partners have put into or taken from TYDAL.
+                Record historical amounts partners owe TYDAL or
+                TYDAL owes partners.
             </p>
 
         </div>
@@ -748,9 +709,11 @@ TDM — TYDAL Setup
 
     <div class="setup-card">
 
-        <form method="POST" action="{{ url_for('setup.add_partner_transaction') }}">
+        <form method="POST"
+              action="{{ url_for('setup.add_partner_transaction') }}">
 
             <div class="form-grid">
+
 
                 <div class="form-group">
 
@@ -758,7 +721,9 @@ TDM — TYDAL Setup
                         Partner
                     </label>
 
-                    <select id="transaction-partner" name="partner_id" required>
+                    <select id="transaction-partner"
+                            name="partner_id"
+                            required>
 
                         <option value="">
                             Select partner
@@ -780,17 +745,19 @@ TDM — TYDAL Setup
                 <div class="form-group">
 
                     <label for="transaction-type">
-                        Transaction type
+                        Opening position
                     </label>
 
-                    <select id="transaction-type" name="transaction_type" required>
+                    <select id="transaction-type"
+                            name="transaction_type"
+                            required>
 
                         <option value="">
                             Select type
                         </option>
 
                         <option value="contribution">
-                            Contribution — helping TYDAL
+                            Contribution — partner helped TYDAL
                         </option>
 
                         <option value="advance">
@@ -798,7 +765,7 @@ TDM — TYDAL Setup
                         </option>
 
                         <option value="withdrawal">
-                            Withdrawal — partner took TYDAL money
+                            Withdrawal — partner owes TYDAL
                         </option>
 
                         <option value="personal_expense">
@@ -806,7 +773,7 @@ TDM — TYDAL Setup
                         </option>
 
                         <option value="repayment">
-                            Repayment
+                            Historical repayment
                         </option>
 
                     </select>
@@ -824,8 +791,13 @@ TDM — TYDAL Setup
 
                         <span>R</span>
 
-                        <input id="transaction-amount" type="number" name="amount" min="0.01" step="0.01"
-                            placeholder="0.00" required>
+                        <input id="transaction-amount"
+                               type="number"
+                               name="amount"
+                               min="0.01"
+                               step="0.01"
+                               placeholder="0.00"
+                               required>
 
                     </div>
 
@@ -834,36 +806,13 @@ TDM — TYDAL Setup
 
                 <div class="form-group">
 
-                    <label for="transaction-money-location">
-                        TYDAL money location
-                    </label>
-
-                    <select id="transaction-money-location" name="money_account_id">
-
-                        <option value="">
-                            Not applicable
-                        </option>
-
-                        {% for account in money_accounts %}
-
-                        <option value="{{ account.id }}">
-                            {{ account.name }}
-                        </option>
-
-                        {% endfor %}
-
-                    </select>
-
-                </div>
-
-
-                <div class="form-group">
-
                     <label for="transaction-date">
-                        Date
+                        As at date
                     </label>
 
-                    <input id="transaction-date" type="date" name="transaction_date">
+                    <input id="transaction-date"
+                           type="date"
+                           name="transaction_date">
 
                 </div>
 
@@ -876,18 +825,22 @@ TDM — TYDAL Setup
                     Description
                 </label>
 
-                <input id="transaction-description" type="text" name="description"
-                    placeholder="e.g. Money taken for family emergency">
+                <input id="transaction-description"
+                       type="text"
+                       name="description"
+                       placeholder="e.g. Agreed opening balance">
 
             </div>
 
 
             <div class="form-checkbox">
 
-                <input id="transaction-estimate" type="checkbox" name="is_estimate">
+                <input id="transaction-estimate"
+                       type="checkbox"
+                       name="is_estimate">
 
                 <label for="transaction-estimate">
-                    I am estimating this amount or date
+                    This opening amount or date is estimated
                 </label>
 
             </div>
@@ -899,34 +852,18 @@ TDM — TYDAL Setup
                     Notes
                 </label>
 
-                <textarea id="transaction-notes" name="notes" rows="2"
-                    placeholder="What do you remember about this transaction?"></textarea>
+                <textarea id="transaction-notes"
+                          name="notes"
+                          rows="2"
+                          placeholder="Explain how this opening balance was agreed..."></textarea>
 
             </div>
 
 
-            <button class="primary-button" type="submit">
-                + Record Partner Transaction
+            <button class="primary-button"
+                    type="submit">
+                + Record Opening Position
             </button>
-
-            {% if current_user.role == "admin" %}
-            <div class="setup-reset-section">
-                <h3>Restart Business Setup</h3>
-
-                <p>
-                    Clears the opening money, opening stock and opening partner
-                    history entered during setup. Team accounts will not be deleted.
-                </p>
-
-                <form method="POST" action="{{ url_for('setup.reset_setup') }}" onsubmit="return confirm(
-            'Reset Business Setup? Opening money, stock and partner setup records will be cleared. Team accounts will remain.'
-        );">
-                    <button type="submit" class="btn btn-danger">
-                        Reset Business Setup
-                    </button>
-                </form>
-            </div>
-            {% endif %}
 
         </form>
 
@@ -936,27 +873,98 @@ TDM — TYDAL Setup
 
 
 <!-- =====================================================
-     SETUP NOTE
+     FINAL REVIEW
 ===================================================== -->
 
 <div class="setup-note">
 
-    <div class="setup-note-icon">💡</div>
+    <div class="setup-note-icon">✓</div>
 
     <div>
 
         <strong>
-            Don't worry if you don't remember everything.
+            TYDAL opening position ready for review
         </strong>
 
         <p>
-            TDM allows historical and estimated information so we can
-            establish TYDAL's current position honestly. We can correct
-            uncertain information later without pretending it was exact.
+            Check the money locations, physical stock and partner
+            opening positions carefully before completing setup.
         </p>
 
     </div>
 
 </div>
+
+
+<!-- =====================================================
+     COMPLETE BUSINESS SETUP
+===================================================== -->
+
+{% if current_user.role == "admin" %}
+
+<section class="setup-section">
+
+    <div class="section-heading">
+
+        <div>
+
+            <span class="section-number">✓</span>
+
+            <h3>Complete Business Setup</h3>
+
+            <p>
+                Finalize TYDAL's opening position and begin normal
+                business operations in TDM.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="setup-card">
+
+        <div class="setup-note">
+
+            <div class="setup-note-icon">🚀</div>
+
+            <div>
+
+                <strong>
+                    Ready to launch TDM
+                </strong>
+
+                <p>
+                    Once you continue, the information above becomes
+                    TYDAL's official opening position.
+                </p>
+
+                <p>
+                    Future activity should then be recorded through
+                    Sales, Purchases, Expenses, Money and Partners.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <form method="POST"
+              action="{{ url_for('setup.complete_setup') }}"
+              onsubmit="return confirm('Complete TYDAL Business Setup? Make sure the opening money, stock and partner positions are correct before continuing.');">
+
+            <button class="primary-button"
+                    type="submit">
+                ✓ Complete Business Setup
+            </button>
+
+        </form>
+
+    </div>
+
+</section>
+
+{% endif %}
+
 
 {% endblock %}
