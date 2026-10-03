@@ -67,6 +67,19 @@
 
 
     <div class="stat-card">
+        <div class="stat-label">Partner Draws</div>
+
+        <div class="stat-value">
+            R{{ "%.2f"|format(total_draws) }}
+        </div>
+
+        <div class="stat-description">
+            Permanent personal withdrawals · no repayment expected
+        </div>
+    </div>
+
+
+    <div class="stat-card">
         <div class="stat-label">Paid Personally</div>
 
         <div class="stat-value">
@@ -145,6 +158,13 @@
                     <span>Withdrawn</span>
                     <strong>
                         R{{ "%.2f"|format(row.withdrawals) }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Partner draws</span>
+                    <strong>
+                        R{{ "%.2f"|format(row.draws) }}
                     </strong>
                 </div>
 
@@ -267,7 +287,7 @@
                         {% if transaction.transaction_type in
                         ["contribution", "advance", "repayment"] %}
                         +
-                        {% elif transaction.transaction_type in ["withdrawal", "settlement"] %}
+                        {% elif transaction.transaction_type in ["withdrawal", "draw", "settlement"] %}
                         −
                         {% else %}
                         •
@@ -298,6 +318,12 @@
                             {{ transaction.description }}
                         </small>
 
+                        {% endif %}
+
+                        {% if transaction.money_account %}
+                        <small>
+                            Money location: {{ transaction.money_account.name }}
+                        </small>
                         {% endif %}
 
                     </div>
@@ -421,6 +447,10 @@
 
                         <option value="withdrawal">
                             Withdrawal — partner took TYDAL money
+                        </option>
+
+                        <option value="draw">
+                            Partner Draw — permanent personal withdrawal, no repayment
                         </option>
 
                         <option value="personal_expense">
@@ -654,6 +684,22 @@
                 effect:
                     "TYDAL money decreases and the amount is " +
                     "recorded against the partner."
+            },
+
+            draw: {
+                help:
+                    "The partner is taking TYDAL money permanently. " +
+                    "No repayment is expected.",
+
+                label:
+                    "Where was the draw taken from?",
+
+                account:
+                    "Choose the exact TYDAL money location paying the draw.",
+
+                effect:
+                    "TYDAL money decreases, but the partner's debt to TYDAL " +
+                    "does not increase."
             },
 
             personal_expense: {

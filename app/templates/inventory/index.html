@@ -87,15 +87,15 @@
     <div class="stat-card">
 
         <div class="stat-label">
-            Low Stock
+            Stock Attention
         </div>
 
         <div class="stat-value">
-            {{ low_stock_count }}
+            {{ stock_attention_count }}
         </div>
 
         <div class="stat-description">
-            Products at or below their warning level
+            {{ low_stock_count }} low · {{ sold_out_count }} sold out
         </div>
 
     </div>
@@ -120,7 +120,7 @@
         </div>
 
         <span class="transaction-count">
-            {{ product_rows|length }} products
+            {{ product_rows|length }} product families
         </span>
 
     </div>
@@ -135,151 +135,89 @@
         <article class="inventory-product-card">
 
             <div class="inventory-product-header">
-
                 <div>
-
                     <div class="inventory-product-title">
-
-                        <h4>
-                            {{ row.product.name }}
-                        </h4>
-
-                        {% if row.low_stock %}
-
-                        <span class="low-stock-badge">
-                            Low stock
-                        </span>
-
+                        <h4>{{ row.name }}</h4>
+                        {% if row.stock_status == "sold_out" %}
+                        <span class="low-stock-badge">SOLD OUT</span>
+                        {% elif row.stock_status == "low" %}
+                        <span class="low-stock-badge">Low stock</span>
                         {% endif %}
-
                     </div>
-
 
                     <div class="inventory-product-meta">
-
-                        {% if row.product.brand %}
-                        <span>{{ row.product.brand }}</span>
-                        {% endif %}
-
-                        {% if row.product.category %}
-                        <span>{{ row.product.category }}</span>
-                        {% endif %}
-
-                        {% if row.product.size %}
-                        <span>Size {{ row.product.size }}</span>
-                        {% endif %}
-
-                        {% if row.product.color %}
-                        <span>{{ row.product.color }}</span>
-                        {% endif %}
-
+                        {% if row.brand %}<span>{{ row.brand }}</span>{% endif %}
+                        {% if row.category %}<span>{{ row.category }}</span>{% endif %}
                     </div>
 
+                    <small>
+                        Oldest stock: {{ row.oldest_age_days }} day{% if row.oldest_age_days != 1 %}s{% endif %}
+                    </small>
                 </div>
-
 
                 <div class="inventory-total-stock">
-
-                    <strong>
-                        {{ row.product.quantity }}
-                    </strong>
-
-                    <span>
-                        units
-                    </span>
-
+                    <strong>{{ row.quantity }}</strong>
+                    <span>units</span>
                 </div>
-
             </div>
-
-
-            {% if row.stock_mismatch %}
-
-            <div class="stock-warning">
-
-                <strong>Stock needs attention</strong>
-
-                <span>
-                    Product total says
-                    {{ row.product.quantity }},
-                    but physical locations contain
-                    {{ row.holding_total }}.
-                </span>
-
-            </div>
-
-            {% endif %}
-
 
             <div class="inventory-value-row">
-
                 <div>
                     <span>Cost value</span>
-
-                    <strong>
-                        R{{ "%.2f"|format(row.cost_value) }}
-                    </strong>
+                    <strong>R{{ "%.2f"|format(row.cost_value) }}</strong>
                 </div>
-
-
                 <div>
                     <span>Potential sales</span>
-
-                    <strong>
-                        R{{ "%.2f"|format(row.retail_value) }}
-                    </strong>
+                    <strong>R{{ "%.2f"|format(row.retail_value) }}</strong>
                 </div>
-
             </div>
 
-
-            <div class="stock-location-heading">
-                WHERE THE STOCK IS
-            </div>
-
-
-            {% if row.holdings %}
+            <div class="stock-location-heading">VARIANTS</div>
 
             <div class="stock-location-list">
-
-                {% for holding_row in row.holdings %}
-
-                <div class="stock-location-row">
-
-                    <div>
-
-                        <span class="stock-location-dot"></span>
-
-                        <span>
-                            {{ holding_row.location.name }}
-                        </span>
-
+                {% for variant in row.variants %}
+                <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color, #e8e8e8);">
+                    <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start;">
+                        <div>
+                            <strong>
+                                {% if variant.size %}Size {{ variant.size }}{% else %}Standard{% endif %}
+                                {% if variant.color %} · {{ variant.color }}{% endif %}
+                            </strong>
+                            <div style="margin-top:4px; opacity:.7; font-size:.86rem;">
+                                Stock age: {{ variant.age_days }} day{% if variant.age_days != 1 %}s{% endif %}
+                            </div>
+                        </div>
+                        <strong>{{ variant.quantity }}</strong>
                     </div>
 
-                    <strong>
-                        {{ holding_row.holding.quantity }}
-                    </strong>
+                    {% if variant.stock_mismatch %}
+                    <div class="stock-warning" style="margin-top:10px;">
+                        <strong>Stock needs attention</strong>
+                        <span>
+                            Variant total says {{ variant.quantity }}, but physical locations contain
+                            {{ variant.holding_total }}.
+                        </span>
+                    </div>
+                    {% endif %}
 
+                    <div style="margin-top:10px; font-size:.86rem; opacity:.8;">
+                        {% if variant.holdings %}
+                            {% for holding_row in variant.holdings %}
+                                {{ holding_row.location.name }}: <strong>{{ holding_row.holding.quantity }}</strong>{% if not loop.last %} · {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            No physical stock currently held.
+                        {% endif %}
+                    </div>
                 </div>
-
                 {% endfor %}
-
             </div>
-
-            {% else %}
-
-            <div class="inventory-no-location">
-                No physical stock location recorded.
-            </div>
-
-            {% endif %}
 
         </article>
 
         {% endfor %}
 
     </div>
-
 
     {% else %}
 
@@ -481,17 +419,10 @@
                         Choose product
                     </option>
 
-                    {% for row in product_rows %}
-
-                    {% if row.product.quantity > 0 %}
-
-                    <option value="{{ row.product.id }}">
-                        {{ row.product.name }}
-                        — {{ row.product.quantity }} total
+                    {% for option in move_options %}
+                    <option value="{{ option.product.id }}">
+                        {{ option.label }} — {{ option.quantity }} available
                     </option>
-
-                    {% endif %}
-
                     {% endfor %}
 
                 </select>

@@ -1,632 +1,133 @@
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
-
-from flask import (
-    Blueprint,
-    render_template,
-    request,
-    redirect,
-    url_for,
-    flash
-)
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-
 from app import db
-from app.models import (
-    Sale,
-    SaleItem,
-    Product,
-    StockHolding,
-    StockLocation,
-    StockMovement,
-    MoneyAccount,
-    FinancialTransaction
-)
+from app.models import (Sale, SaleItem, SalePayment, Product, StockHolding, StockLocation,
+                        StockMovement, MoneyAccount, FinancialTransaction)
 
-
-sales = Blueprint(
-    "sales",
-    __name__,
-    url_prefix="/sales"
-)
-
-
-# ============================================================
-# HELPERS
-# ============================================================
+sales = Blueprint('sales', __name__, url_prefix='/sales')
+D=Decimal
 
 def generate_sale_number():
-    """
-    Generate a readable unique sale number.
+    today=datetime.utcnow(); prefix=f"TDM-{today.strftime('%y%m%d')}"
+    latest=Sale.query.filter(Sale.sale_number.like(f'{prefix}-%')).order_by(Sale.id.desc()).first()
+    seq=1
+    if latest:
+        try: seq=int(latest.sale_number.split('-')[-1])+1
+        except (ValueError,IndexError): seq=latest.id+1
+    return f'{prefix}-{seq:04d}'
 
-    Example:
-    TDM-260925-0001
-    """
+def parse_money(raw, label):
+    try: value=D(str(raw or '0')).quantize(D('0.01'))
+    except (InvalidOperation,ValueError): raise ValueError(f'Enter a valid {label}.')
+    if value < 0: raise ValueError(f'{label.title()} cannot be negative.')
+    return value
 
-    today = datetime.utcnow()
-
-    prefix = f"TDM-{today.strftime('%y%m%d')}"
-
-    latest_sale = (
-        Sale.query
-        .filter(Sale.sale_number.like(f"{prefix}-%"))
-        .order_by(Sale.id.desc())
-        .first()
-    )
-
-    sequence = 1
-
-    if latest_sale:
-        try:
-            sequence = int(
-                latest_sale.sale_number.split("-")[-1]
-            ) + 1
-        except (ValueError, IndexError):
-            sequence = latest_sale.id + 1
-
-    return f"{prefix}-{sequence:04d}"
-
-
-# ============================================================
-# SALES PAGE
-# ============================================================
-
-@sales.route("/")
+@sales.route('/')
 @login_required
 def index():
+    recent_sales=Sale.query.order_by(Sale.sale_date.desc(),Sale.id.desc()).limit(40).all()
+    today=datetime.utcnow().date()
+    today_sales=[s for s in recent_sales if s.sale_date.date()==today and s.status=='completed']
+    today_revenue=sum((D(str(s.total_amount or 0)) for s in today_sales),D('0'))
+    outstanding=sum((D(str(s.outstanding_amount or 0)) for s in Sale.query.filter(Sale.status=='completed').all()),D('0'))
+    accounts=MoneyAccount.query.filter_by(is_active=True).order_by(MoneyAccount.name).all()
+    return render_template('sales/index.html',recent_sales=recent_sales,today_revenue=today_revenue,
+                           today_sale_count=len(today_sales),outstanding_total=outstanding,money_accounts=accounts)
 
-    recent_sales = (
-        Sale.query
-        .order_by(
-            Sale.sale_date.desc(),
-            Sale.id.desc()
-        )
-        .limit(25)
-        .all()
-    )
-
-    today = datetime.utcnow().date()
-
-    today_sales = [
-        sale
-        for sale in recent_sales
-        if sale.sale_date.date() == today
-        and sale.status == "completed"
-    ]
-
-    today_revenue = sum(
-        (
-            Decimal(str(sale.total_amount))
-            for sale in today_sales
-        ),
-        Decimal("0.00")
-    )
-
-    return render_template(
-        "sales/index.html",
-        recent_sales=recent_sales,
-        today_revenue=today_revenue,
-        today_sale_count=len(today_sales)
-    )
-
-
-# ============================================================
-# NEW SALE
-# ============================================================
-
-@sales.route("/new", methods=["GET", "POST"])
+@sales.route('/new', methods=['GET','POST'])
 @login_required
 def new_sale():
+    products=Product.query.filter(Product.is_active.is_(True),Product.quantity>0).order_by(Product.name).all()
+    accounts=MoneyAccount.query.filter_by(is_active=True).order_by(MoneyAccount.name).all()
+    locations=StockLocation.query.filter_by(is_active=True).order_by(StockLocation.name).all()
+    if request.method=='GET':
+        return render_template('sales/new.html',products=products,money_accounts=accounts,stock_locations=locations,
+                               holdings=StockHolding.query.filter(StockHolding.quantity>0).all())
 
-    products = (
-        Product.query
-        .filter(
-            Product.is_active.is_(True),
-            Product.quantity > 0
-        )
-        .order_by(Product.name.asc())
-        .all()
-    )
-
-    money_accounts = (
-        MoneyAccount.query
-        .filter_by(is_active=True)
-        .order_by(MoneyAccount.name.asc())
-        .all()
-    )
-
-    stock_locations = (
-        StockLocation.query
-        .filter_by(is_active=True)
-        .order_by(StockLocation.name.asc())
-        .all()
-    )
-
-
-    # --------------------------------------------------------
-    # Display form
-    # --------------------------------------------------------
-
-    if request.method == "GET":
-
-        holdings = (
-            StockHolding.query
-            .filter(StockHolding.quantity > 0)
-            .all()
-        )
-
-        return render_template(
-            "sales/new.html",
-            products=products,
-            money_accounts=money_accounts,
-            stock_locations=stock_locations,
-            holdings=holdings
-        )
-
-
-    # --------------------------------------------------------
-    # Read submitted sale
-    # --------------------------------------------------------
-
-    product_id = request.form.get(
-        "product_id",
-        type=int
-    )
-
-    stock_location_id = request.form.get(
-        "stock_location_id",
-        type=int
-    )
-
-    money_account_id = request.form.get(
-        "money_account_id",
-        type=int
-    )
-
-    quantity = request.form.get(
-        "quantity",
-        type=int
-    )
-
-    payment_method = request.form.get(
-        "payment_method",
-        ""
-    ).strip()
-
-    unit_price_raw = request.form.get(
-        "unit_price",
-        ""
-    ).strip()
-
-    notes = request.form.get(
-        "notes",
-        ""
-    ).strip()
-
-
-    # --------------------------------------------------------
-    # Basic validation
-    # --------------------------------------------------------
-
-    if not all([
-        product_id,
-        stock_location_id,
-        money_account_id,
-        quantity,
-        payment_method
-    ]):
-        flash(
-            "Complete all required sale information.",
-            "error"
-        )
-        return redirect(url_for("sales.new_sale"))
-
-    if quantity <= 0:
-        flash(
-            "Sale quantity must be at least 1.",
-            "error"
-        )
-        return redirect(url_for("sales.new_sale"))
-
-
-    product = db.session.get(
-        Product,
-        product_id
-    )
-
-    stock_location = db.session.get(
-        StockLocation,
-        stock_location_id
-    )
-
-    money_account = db.session.get(
-        MoneyAccount,
-        money_account_id
-    )
-
-
-    if not product or not product.is_active:
-        flash(
-            "The selected product is unavailable.",
-            "error"
-        )
-        return redirect(url_for("sales.new_sale"))
-
-    if not stock_location or not stock_location.is_active:
-        flash(
-            "The selected stock location is unavailable.",
-            "error"
-        )
-        return redirect(url_for("sales.new_sale"))
-
-    if not money_account or not money_account.is_active:
-        flash(
-            "The selected money location is unavailable.",
-            "error"
-        )
-        return redirect(url_for("sales.new_sale"))
-
-
-    # --------------------------------------------------------
-    # Check stock at the physical location
-    # --------------------------------------------------------
-
-    holding = StockHolding.query.filter_by(
-        product_id=product.id,
-        stock_location_id=stock_location.id
-    ).first()
-
-    if not holding or holding.quantity < quantity:
-
-        available = (
-            holding.quantity
-            if holding
-            else 0
-        )
-
-        flash(
-            f"Only {available} × {product.name} available "
-            f"at {stock_location.name}.",
-            "error"
-        )
-
-        return redirect(url_for("sales.new_sale"))
-
-
-    # --------------------------------------------------------
-    # Sale price
-    # --------------------------------------------------------
-
-    if unit_price_raw:
-
-        try:
-            unit_price = Decimal(
-                unit_price_raw
-            ).quantize(
-                Decimal("0.01")
-            )
-
-        except (InvalidOperation, ValueError):
-
-            flash(
-                "Enter a valid selling price.",
-                "error"
-            )
-
-            return redirect(url_for("sales.new_sale"))
-
-    else:
-
-        unit_price = Decimal(
-            str(product.selling_price)
-        )
-
-
-    if unit_price <= Decimal("0.00"):
-
-        flash(
-            "Selling price must be greater than R0.00.",
-            "error"
-        )
-
-        return redirect(url_for("sales.new_sale"))
-
-
-    cost_price = Decimal(
-        str(product.cost_price)
-    )
-
-    line_total = (
-        unit_price * quantity
-    ).quantize(
-        Decimal("0.01")
-    )
-
-
-    # --------------------------------------------------------
-    # Create everything as ONE database transaction
-    # --------------------------------------------------------
-
+    product=db.session.get(Product,request.form.get('product_id',type=int))
+    location=db.session.get(StockLocation,request.form.get('stock_location_id',type=int))
+    qty=request.form.get('quantity',type=int) or 0
+    payment_method=request.form.get('payment_method','').strip()
+    customer_name=request.form.get('customer_name','').strip()
+    customer_contact=request.form.get('customer_contact','').strip()
+    notes=request.form.get('notes','').strip()
+    account_id=request.form.get('money_account_id',type=int)
+    account=db.session.get(MoneyAccount,account_id) if account_id else None
+    if not product or not product.is_active or not location or not location.is_active or qty<=0:
+        flash('Complete the product, stock location and quantity correctly.','error'); return redirect(url_for('sales.new_sale'))
+    holding=StockHolding.query.filter_by(product_id=product.id,stock_location_id=location.id).first()
+    if not holding or holding.quantity<qty:
+        flash(f'Only {holding.quantity if holding else 0} × {product.name} available at {location.name}.','error'); return redirect(url_for('sales.new_sale'))
     try:
-
-        sale = Sale(
-            sale_number=generate_sale_number(),
-            total_amount=line_total,
-            payment_method=payment_method,
-            money_account_id=money_account.id,
-            sold_by_id=current_user.id,
-            status="completed",
-            notes=notes or None,
-            sale_date=datetime.utcnow()
-        )
-
-        db.session.add(sale)
-
-        db.session.flush()
-
-
-        # ----------------------------------------------------
-        # Sale item
-        # ----------------------------------------------------
-
-        sale_item = SaleItem(
-            sale_id=sale.id,
-            product_id=product.id,
-            quantity=quantity,
-            unit_price=unit_price,
-            cost_price=cost_price,
-            line_total=line_total,
-            stock_location_id=stock_location.id
-        )
-
-        db.session.add(sale_item)
-
-
-        # ----------------------------------------------------
-        # Reduce physical stock
-        # ----------------------------------------------------
-
-        holding.quantity -= quantity
-
-        product.quantity -= quantity
-
-
-        # ----------------------------------------------------
-        # Permanent stock history
-        # ----------------------------------------------------
-
-        stock_movement = StockMovement(
-            product_id=product.id,
-            movement_type="sale",
-            quantity=quantity,
-            unit_cost=cost_price,
-            from_location_id=stock_location.id,
-            to_location_id=None,
-            reference=sale.sale_number,
-            notes=f"Sold by {current_user.name}",
-            movement_date=sale.sale_date,
-            created_by_id=current_user.id
-        )
-
-        db.session.add(stock_movement)
-
-
-        # ----------------------------------------------------
-        # Financial ledger
-        # ----------------------------------------------------
-
-        financial_transaction = FinancialTransaction(
-            transaction_type="sale",
-            amount=line_total,
-            from_account_id=None,
-            to_account_id=money_account.id,
-            description=(
-                f"Sale {sale.sale_number} — "
-                f"{quantity} × {product.name}"
-            ),
-            reference=sale.sale_number,
-            transaction_date=sale.sale_date,
-            source_type="sale",
-            source_id=sale.id,
-            notes=notes or None,
-            created_by_id=current_user.id
-        )
-
-        db.session.add(financial_transaction)
-
-
-        # ----------------------------------------------------
-        # Commit EVERYTHING together
-        # ----------------------------------------------------
-
+        agreed_unit=parse_money(request.form.get('unit_price'), 'selling price')
+        amount_paid=parse_money(request.form.get('amount_paid'), 'amount paid')
+    except ValueError as e:
+        flash(str(e),'error'); return redirect(url_for('sales.new_sale'))
+    if agreed_unit<=0:
+        flash('Selling price must be greater than R0.00.','error'); return redirect(url_for('sales.new_sale'))
+    agreed_total=(agreed_unit*qty).quantize(D('0.01'))
+    listed_total=(D(str(product.selling_price or 0))*qty).quantize(D('0.01'))
+    if amount_paid>agreed_total:
+        flash('Amount paid cannot be more than the agreed sale total.','error'); return redirect(url_for('sales.new_sale'))
+    outstanding=agreed_total-amount_paid
+    if amount_paid>0 and (not account or not account.is_active or not payment_method):
+        flash('Choose how and where the money received is held.','error'); return redirect(url_for('sales.new_sale'))
+    if outstanding>0 and not customer_name:
+        flash('Enter the customer name when money is still outstanding.','error'); return redirect(url_for('sales.new_sale'))
+    status='paid' if outstanding==0 else ('partially_paid' if amount_paid>0 else 'unpaid')
+    now=datetime.utcnow()
+    try:
+        sale=Sale(sale_number=generate_sale_number(),total_amount=agreed_total,listed_total=listed_total,
+                  amount_paid=amount_paid,outstanding_amount=outstanding,payment_status=status,
+                  customer_name=customer_name or None,customer_contact=customer_contact or None,
+                  payment_method=payment_method or 'credit',money_account_id=(account.id if account else None),
+                  sold_by_id=current_user.id,status='completed',notes=notes or None,sale_date=now)
+        db.session.add(sale); db.session.flush()
+        cost=D(str(product.cost_price or 0))
+        db.session.add(SaleItem(sale_id=sale.id,product_id=product.id,quantity=qty,unit_price=agreed_unit,cost_price=cost,
+                                line_total=agreed_total,stock_location_id=location.id))
+        holding.quantity-=qty; product.quantity-=qty
+        db.session.add(StockMovement(product_id=product.id,movement_type='sale',quantity=qty,unit_cost=cost,
+                    from_location_id=location.id,reference=sale.sale_number,notes=f'Sold by {current_user.name}',movement_date=now,created_by_id=current_user.id))
+        if amount_paid>0:
+            payment=SalePayment(sale_id=sale.id,amount=amount_paid,money_account_id=account.id,payment_method=payment_method,
+                                payment_date=now,recorded_by_id=current_user.id)
+            db.session.add(payment); db.session.flush()
+            db.session.add(FinancialTransaction(transaction_type='sale_payment',amount=amount_paid,to_account_id=account.id,
+                    description=f'Payment for {sale.sale_number}',reference=sale.sale_number,transaction_date=now,
+                    source_type='sale_payment',source_id=payment.id,notes=notes or None,created_by_id=current_user.id))
         db.session.commit()
-
-
     except Exception:
+        db.session.rollback(); flash('The sale could not be recorded. No stock or money was changed.','error'); return redirect(url_for('sales.new_sale'))
+    msg=f'Sale {sale.sale_number} recorded — R{agreed_total:.2f}'
+    if outstanding: msg+=f' (R{outstanding:.2f} still owed).'
+    flash(msg,'success'); return redirect(url_for('sales.index'))
 
-        db.session.rollback()
-
-        flash(
-            "The sale could not be recorded. "
-            "No stock or money was changed.",
-            "error"
-        )
-
-        return redirect(
-            url_for("sales.new_sale")
-        )
-
-
-    flash(
-        f"Sale {sale.sale_number} recorded — "
-        f"R{line_total:.2f}.",
-        "success"
-    )
-
-    return redirect(
-        url_for("sales.index")
-    )
-
-
-# ============================================================
-# TEMPORARY DEMO SALE CLEANUP
-# ============================================================
-
-@sales.route("/cleanup-demo-sale", methods=["POST"])
+@sales.route('/<int:sale_id>/payment',methods=['POST'])
 @login_required
-def cleanup_demo_sale():
-    """
-    TEMPORARY commissioning tool.
-
-    Removes the known R350 demo sale made before TYDAL went live
-    and restores the stock that the demo sale deducted.
-
-    Remove this route after it has been used successfully.
-    """
-
-    if current_user.role != "admin":
-        flash(
-            "Only an administrator can perform setup cleanup.",
-            "error"
-        )
-        return redirect(url_for("sales.index"))
-
-
-    # --------------------------------------------------------
-    # Find candidate R350 completed sales.
-    #
-    # We deliberately refuse to continue unless EXACTLY ONE
-    # exists. This prevents us from accidentally deleting a
-    # genuine R350 sale.
-    # --------------------------------------------------------
-
-    demo_sales = (
-        Sale.query
-        .filter(
-            Sale.status == "completed",
-            Sale.total_amount == Decimal("350.00")
-        )
-        .all()
-    )
-
-
-    if len(demo_sales) == 0:
-        flash(
-            "No R350 demo sale was found. Nothing was changed.",
-            "error"
-        )
-        return redirect(url_for("sales.index"))
-
-
-    if len(demo_sales) > 1:
-        flash(
-            "More than one R350 sale exists. Cleanup stopped "
-            "to protect real business data.",
-            "error"
-        )
-        return redirect(url_for("sales.index"))
-
-
-    sale = demo_sales[0]
-
-
+def record_payment(sale_id):
+    sale=db.session.get(Sale,sale_id)
+    account=db.session.get(MoneyAccount,request.form.get('money_account_id',type=int))
+    method=request.form.get('payment_method','').strip()
+    notes=request.form.get('notes','').strip()
+    if not sale or sale.status!='completed': flash('Sale not found.','error'); return redirect(url_for('sales.index'))
+    try: amount=parse_money(request.form.get('amount'),'payment amount')
+    except ValueError as e: flash(str(e),'error'); return redirect(url_for('sales.index'))
+    outstanding=D(str(sale.outstanding_amount or 0))
+    if amount<=0 or amount>outstanding or not account or not account.is_active or not method:
+        flash(f'Enter a payment up to R{outstanding:.2f} and choose its money location.','error'); return redirect(url_for('sales.index'))
+    now=datetime.utcnow()
     try:
-
-        sale_items = (
-            SaleItem.query
-            .filter_by(sale_id=sale.id)
-            .all()
-        )
-
-
-        # ----------------------------------------------------
-        # Restore stock deducted by the demo sale
-        # ----------------------------------------------------
-
-        for item in sale_items:
-
-            product = db.session.get(
-                Product,
-                item.product_id
-            )
-
-            holding = StockHolding.query.filter_by(
-                product_id=item.product_id,
-                stock_location_id=item.stock_location_id
-            ).first()
-
-
-            if not product or not holding:
-                raise RuntimeError(
-                    "Could not safely restore the demo stock."
-                )
-
-
-            product.quantity += item.quantity
-            holding.quantity += item.quantity
-
-
-        # ----------------------------------------------------
-        # Delete ledger entry created by this sale
-        # ----------------------------------------------------
-
-        FinancialTransaction.query.filter_by(
-            source_type="sale",
-            source_id=sale.id
-        ).delete(
-            synchronize_session=False
-        )
-
-
-        # ----------------------------------------------------
-        # Delete stock movement created by this sale
-        # ----------------------------------------------------
-
-        StockMovement.query.filter_by(
-            movement_type="sale",
-            reference=sale.sale_number
-        ).delete(
-            synchronize_session=False
-        )
-
-
-        # ----------------------------------------------------
-        # Delete sale items
-        # ----------------------------------------------------
-
-        SaleItem.query.filter_by(
-            sale_id=sale.id
-        ).delete(
-            synchronize_session=False
-        )
-
-
-        # ----------------------------------------------------
-        # Finally delete sale itself
-        # ----------------------------------------------------
-
-        db.session.delete(sale)
-
-
+        payment=SalePayment(sale_id=sale.id,amount=amount,money_account_id=account.id,payment_method=method,payment_date=now,notes=notes or None,recorded_by_id=current_user.id)
+        db.session.add(payment); db.session.flush()
+        sale.amount_paid=D(str(sale.amount_paid or 0))+amount; sale.outstanding_amount=outstanding-amount
+        sale.payment_status='paid' if sale.outstanding_amount==0 else 'partially_paid'
+        db.session.add(FinancialTransaction(transaction_type='sale_payment',amount=amount,to_account_id=account.id,
+            description=f'Outstanding payment for {sale.sale_number}',reference=sale.sale_number,transaction_date=now,
+            source_type='sale_payment',source_id=payment.id,notes=notes or None,created_by_id=current_user.id))
         db.session.commit()
-
-
     except Exception:
-
-        db.session.rollback()
-
-        flash(
-            "Demo cleanup stopped. No changes were committed.",
-            "error"
-        )
-
-        return redirect(url_for("sales.index"))
-
-
-    flash(
-        "Demo R350 sale removed successfully. "
-        "Its stock and money effects were restored.",
-        "success"
-    )
-
-    return redirect(url_for("sales.index"))
+        db.session.rollback(); flash('Payment could not be recorded.','error'); return redirect(url_for('sales.index'))
+    flash(f'R{amount:.2f} received for {sale.sale_number}.','success'); return redirect(url_for('sales.index'))

@@ -4,7 +4,7 @@ from decimal import Decimal
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required
 
-from app.models import Sale, Product, MoneyAccount, FinancialTransaction, PartnerTransaction, Purchase
+from app.models import Sale, SalePayment, Product, MoneyAccount, FinancialTransaction, PartnerTransaction, Purchase
 
 main = Blueprint("main", __name__)
 
@@ -60,6 +60,44 @@ def home():
         Decimal("0.00")
     )
 
+    # Revenue and cash collection are deliberately separate. A credit sale can
+    # create R400 revenue while only R200 has physically entered TYDAL.
+    customers_owe = sum(
+        (to_decimal(sale.outstanding_amount) for sale in Sale.query.filter(Sale.status == "completed").all()),
+        Decimal("0.00")
+    )
+
+    def payment_events_for_period(start, end):
+        """Return real customer-payment events without double-counting legacy v1 sales.
+
+        v1.1 SalePayment rows record later/new payments. Existing v1 sales did not
+        have SalePayment rows, so any paid amount not represented by payment rows
+        is treated as the original collection on the sale date.
+        """
+        events = []
+        completed_sales = Sale.query.filter(Sale.status == "completed").all()
+        for sale in completed_sales:
+            payments = list(getattr(sale, "payments", []) or [])
+            payment_sum = sum((to_decimal(payment.amount) for payment in payments), Decimal("0.00"))
+            legacy_initial_paid = max(to_decimal(sale.amount_paid) - payment_sum, Decimal("0.00"))
+            if legacy_initial_paid > 0 and start <= sale.sale_date < end:
+                events.append({
+                    "amount": legacy_initial_paid,
+                    "method": sale.payment_method or "other",
+                    "date": sale.sale_date,
+                })
+            for payment in payments:
+                if start <= payment.payment_date < end:
+                    events.append({
+                        "amount": to_decimal(payment.amount),
+                        "method": payment.payment_method or "other",
+                        "date": payment.payment_date,
+                    })
+        return events
+
+    weekly_payment_events = payment_events_for_period(week_start, tomorrow_start)
+    weekly_cash_collected = sum((event["amount"] for event in weekly_payment_events), Decimal("0.00"))
+
     # 7-day sales chart
     seven_day_start = today_start - timedelta(days=6)
     seven_day_sales = Sale.query.filter(
@@ -86,11 +124,12 @@ def home():
     for row in seven_day_chart:
         row["percent"] = float((row["value"] / max_sales) * 100) if max_sales > 0 else 0
 
-    # Payment-method chart
+    # Payment-method chart: actual money received, not agreed sale value.
+    seven_day_payment_events = payment_events_for_period(seven_day_start, tomorrow_start)
     payment_totals = {}
-    for sale in seven_day_sales:
-        method = (sale.payment_method or "Other").replace("_", " ").title()
-        payment_totals[method] = payment_totals.get(method, Decimal("0.00")) + to_decimal(sale.total_amount)
+    for event in seven_day_payment_events:
+        method = (event["method"] or "Other").replace("_", " ").title()
+        payment_totals[method] = payment_totals.get(method, Decimal("0.00")) + event["amount"]
 
     payment_total = sum(payment_totals.values(), Decimal("0.00"))
     payment_chart = []
@@ -182,6 +221,8 @@ def home():
         today_sales_total=today_sales_total,
         today_sales_count=today_sales_count,
         weekly_revenue=weekly_revenue,
+        weekly_cash_collected=weekly_cash_collected,
+        customers_owe=customers_owe,
         total_business_money=total_business_money,
         account_rows=account_rows,
         stock_value=stock_value,

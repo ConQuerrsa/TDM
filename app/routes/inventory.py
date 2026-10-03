@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime
 
 from flask import (
     Blueprint,
@@ -33,11 +34,19 @@ inventory = Blueprint(
 @inventory.route("/")
 @login_required
 def index():
+    """Inventory grouped as product families with size/colour variants.
+
+    v1.0 stored every size/colour row as a separate Product.  We keep those
+    records intact because sales, stock movements and holdings already point
+    to them, but present rows with the same name/brand/category as one product
+    family.  This gives TYDAL the correct retail view without rewriting live
+    history or breaking foreign keys.
+    """
 
     products = (
         Product.query
         .filter_by(is_active=True)
-        .order_by(Product.name.asc())
+        .order_by(Product.name.asc(), Product.id.asc())
         .all()
     )
 
@@ -48,15 +57,24 @@ def index():
         .all()
     )
 
-    product_rows = []
+    def clean(value):
+        return (value or "").strip()
+
+    def family_key(product):
+        return (
+            clean(product.name).casefold(),
+            clean(product.brand).casefold(),
+            clean(product.category).casefold(),
+        )
+
+    families = {}
+    move_options = []
 
     total_units = 0
     total_cost_value = Decimal("0.00")
     total_retail_value = Decimal("0.00")
-    low_stock_count = 0
 
     for product in products:
-
         holdings = (
             StockHolding.query
             .filter_by(product_id=product.id)
@@ -64,83 +82,121 @@ def index():
             .all()
         )
 
-        holding_rows = []
-
-        holding_total = 0
-
-        for holding in holdings:
-
-            holding_total += holding.quantity
-
-            holding_rows.append({
-                "holding": holding,
-                "location": holding.stock_location
-            })
-
+        holding_rows = [
+            {"holding": holding, "location": holding.stock_location}
+            for holding in holdings
+        ]
+        holding_total = sum(holding.quantity for holding in holdings)
         quantity = int(product.quantity or 0)
+        cost_price = Decimal(str(product.cost_price or 0))
+        selling_price = Decimal(str(product.selling_price or 0))
+        cost_value = (cost_price * quantity).quantize(Decimal("0.01"))
+        retail_value = (selling_price * quantity).quantize(Decimal("0.01"))
 
-        cost_price = Decimal(
-            str(product.cost_price or 0)
+        first_in = (
+            StockMovement.query
+            .filter(
+                StockMovement.product_id == product.id,
+                StockMovement.to_location_id.isnot(None),
+            )
+            .order_by(StockMovement.movement_date.asc(), StockMovement.id.asc())
+            .first()
         )
+        stocked_at = first_in.movement_date if first_in else product.created_at
+        age_days = max(0, (datetime.utcnow() - stocked_at).days) if stocked_at else 0
 
-        selling_price = Decimal(
-            str(product.selling_price or 0)
+        variant = {
+            "product": product,
+            "size": clean(product.size),
+            "color": clean(product.color),
+            "quantity": quantity,
+            "cost_price": cost_price,
+            "selling_price": selling_price,
+            "cost_value": cost_value,
+            "retail_value": retail_value,
+            "holdings": holding_rows,
+            "holding_total": holding_total,
+            "stock_mismatch": holding_total != quantity,
+            "age_days": age_days,
+            "stocked_at": stocked_at,
+        }
+
+        key = family_key(product)
+        family = families.setdefault(key, {
+            "name": clean(product.name),
+            "brand": clean(product.brand),
+            "category": clean(product.category),
+            "variants": [],
+            "quantity": 0,
+            "cost_value": Decimal("0.00"),
+            "retail_value": Decimal("0.00"),
+            "low_stock_level": int(product.low_stock_level or 0),
+            "oldest_age_days": 0,
+        })
+        family["variants"].append(variant)
+        family["quantity"] += quantity
+        family["cost_value"] += cost_value
+        family["retail_value"] += retail_value
+        family["low_stock_level"] = max(
+            family["low_stock_level"], int(product.low_stock_level or 0)
         )
-
-        cost_value = (
-            cost_price * quantity
-        ).quantize(
-            Decimal("0.01")
-        )
-
-        retail_value = (
-            selling_price * quantity
-        ).quantize(
-            Decimal("0.01")
-        )
-
-        low_stock = (
-            quantity <= product.low_stock_level
-        )
-
-        if low_stock:
-            low_stock_count += 1
+        family["oldest_age_days"] = max(family["oldest_age_days"], age_days)
 
         total_units += quantity
         total_cost_value += cost_value
         total_retail_value += retail_value
 
-        product_rows.append({
-            "product": product,
-            "holdings": holding_rows,
-            "holding_total": holding_total,
-            "cost_value": cost_value,
-            "retail_value": retail_value,
-            "low_stock": low_stock,
-            "stock_mismatch": holding_total != quantity
-        })
+        if quantity > 0:
+            label_bits = [clean(product.name)]
+            details = [x for x in (clean(product.size), clean(product.color)) if x]
+            if details:
+                label_bits.append(" · ".join(details))
+            move_options.append({
+                "product": product,
+                "label": " — ".join(label_bits),
+                "quantity": quantity,
+            })
 
+    product_rows = []
+    low_stock_count = 0
+    sold_out_count = 0
+
+    for family in families.values():
+        family["variants"].sort(
+            key=lambda v: (v["size"].casefold(), v["color"].casefold(), v["product"].id)
+        )
+        if family["quantity"] == 0:
+            family["stock_status"] = "sold_out"
+            sold_out_count += 1
+        elif family["quantity"] <= family["low_stock_level"]:
+            family["stock_status"] = "low"
+            low_stock_count += 1
+        else:
+            family["stock_status"] = "healthy"
+        product_rows.append(family)
+
+    product_rows.sort(key=lambda row: (row["name"].casefold(), row["brand"].casefold()))
+    stock_attention_count = low_stock_count + sold_out_count
 
     recent_movements = (
         StockMovement.query
-        .order_by(
-            StockMovement.movement_date.desc(),
-            StockMovement.id.desc()
-        )
+        .order_by(StockMovement.movement_date.desc(), StockMovement.id.desc())
         .limit(15)
         .all()
     )
 
-
     return render_template(
         "inventory/index.html",
         product_rows=product_rows,
+        move_options=move_options,
         locations=locations,
         total_units=total_units,
         total_cost_value=total_cost_value,
         total_retail_value=total_retail_value,
         low_stock_count=low_stock_count,
-        recent_movements=recent_movements
+        sold_out_count=sold_out_count,
+        stock_attention_count=stock_attention_count,
+        recent_movements=recent_movements,
     )
 
 

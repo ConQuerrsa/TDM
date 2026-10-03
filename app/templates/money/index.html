@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Money — TDM{% endblock %}
+{% block title %}Money — TDM
+<section class="money-section">
+  <div class="section-heading"><div><h3>Other money in</h3><p>Debt recoveries and other TYDAL cash receipts that are not product sales.</p></div></div>
+  <form method="POST" action="{{ url_for('money.record_income') }}" class="sale-form-card">
+    <div class="form-row"><div class="form-group"><label>Type</label><select name="income_type"><option value="historical_debt_recovery">Historical debt recovery</option><option value="other_income">Other income</option><option value="refund">Refund received</option></select></div>
+    <div class="form-group"><label>Amount</label><input name="amount" type="number" min="0.01" step="0.01" required></div></div>
+    <div class="form-group"><label>Put money in</label><select name="money_account_id" required>{% for account in accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></div>
+    <div class="form-group"><label>Description</label><input name="description" required placeholder="e.g. Old TYDAL debt repaid"></div>
+    <div class="form-group"><label>Notes</label><textarea name="notes" rows="2" placeholder="Explain where the old debt came from"></textarea></div>
+    <button class="primary-button" type="submit">+ Record Money In</button>
+  </form>
+</section>
+
+{% endblock %}
 
 {% block content %}
 
@@ -151,9 +164,9 @@
             <div class="transaction-main">
 
                 <div class="transaction-icon">
-                    {% if transaction.transaction_type == "sale" %}
+                    {% if transaction.transaction_type in ["sale", "sale_payment", "other_income", "partner_contribution", "partner_advance", "partner_repayment"] %}
                     +
-                    {% elif transaction.transaction_type in ["expense", "purchase", "withdrawal"] %}
+                    {% elif transaction.transaction_type in ["expense", "purchase", "withdrawal", "partner_withdrawal", "partner_draw", "partner_settlement"] %}
                     −
                     {% elif transaction.transaction_type == "transfer" %}
                     ↔
@@ -470,5 +483,18 @@
     });
 
 </script>
+
+
+<section class="money-section">
+  <div class="section-heading"><div><h3>Other money in</h3><p>Debt recoveries and other TYDAL cash receipts that are not product sales.</p></div></div>
+  <form method="POST" action="{{ url_for('money.record_income') }}" class="sale-form-card">
+    <div class="form-row"><div class="form-group"><label>Type</label><select name="income_type"><option value="historical_debt_recovery">Historical debt recovery</option><option value="other_income">Other income</option><option value="refund">Refund received</option></select></div>
+    <div class="form-group"><label>Amount</label><input name="amount" type="number" min="0.01" step="0.01" required></div></div>
+    <div class="form-group"><label>Put money in</label><select name="money_account_id" required>{% for account in accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></div>
+    <div class="form-group"><label>Description</label><input name="description" required placeholder="e.g. Old TYDAL debt repaid"></div>
+    <div class="form-group"><label>Notes</label><textarea name="notes" rows="2" placeholder="Explain where the old debt came from"></textarea></div>
+    <button class="primary-button" type="submit">+ Record Money In</button>
+  </form>
+</section>
 
 {% endblock %}

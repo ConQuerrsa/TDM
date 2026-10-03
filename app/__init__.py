@@ -34,6 +34,7 @@ def create_app():
     from app.routes.reports import reports
     from app.routes.team import team
     from app.routes.activity import activity
+    from app.routes.settings import settings
 
     app.register_blueprint(main)
     app.register_blueprint(auth)
@@ -47,6 +48,7 @@ def create_app():
     app.register_blueprint(reports)
     app.register_blueprint(team)
     app.register_blueprint(activity)
+    app.register_blueprint(settings)
 
     @app.context_processor
     def inject_business_setup_status():

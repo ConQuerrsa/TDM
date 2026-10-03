@@ -380,6 +380,14 @@ class Sale(db.Model):
         default=Decimal("0.00")
     )
 
+    # v1.1 payment state: total_amount is the agreed sale value.
+    listed_total = db.Column(db.Numeric(12, 2), nullable=True)
+    amount_paid = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0.00"))
+    outstanding_amount = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0.00"))
+    payment_status = db.Column(db.String(30), nullable=False, default="paid")
+    customer_name = db.Column(db.String(120), nullable=True)
+    customer_contact = db.Column(db.String(80), nullable=True)
+
     payment_method = db.Column(
         db.String(30),
         nullable=False
@@ -388,7 +396,7 @@ class Sale(db.Model):
     money_account_id = db.Column(
         db.Integer,
         db.ForeignKey("money_accounts.id"),
-        nullable=False
+        nullable=True
     )
 
     sold_by_id = db.Column(
@@ -1171,3 +1179,60 @@ class BusinessSettings(db.Model):
         "User",
         foreign_keys=[setup_completed_by_id]
     )
+
+# ============================================================
+# TDM v1.1 — VARIANTS, SALE PAYMENTS & OTHER INCOME
+# ============================================================
+
+class ProductVariant(db.Model):
+    __tablename__ = "product_variants"
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False, index=True)
+    size = db.Column(db.String(50), nullable=True)
+    color = db.Column(db.String(50), nullable=True)
+    sku = db.Column(db.String(80), nullable=True, unique=True)
+    cost_price = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0.00"))
+    selling_price = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0.00"))
+    quantity = db.Column(db.Integer, nullable=False, default=0)
+    low_stock_level = db.Column(db.Integer, nullable=False, default=2)
+    first_stocked_at = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    product = db.relationship("Product", backref=db.backref("variants", cascade="all, delete-orphan"))
+
+    @property
+    def label(self):
+        bits = [x for x in (self.size, self.color) if x]
+        return " · ".join(bits) if bits else "Standard"
+
+
+class SalePayment(db.Model):
+    __tablename__ = "sale_payments"
+    id = db.Column(db.Integer, primary_key=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey("sales.id"), nullable=False, index=True)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    money_account_id = db.Column(db.Integer, db.ForeignKey("money_accounts.id"), nullable=False)
+    payment_method = db.Column(db.String(30), nullable=False)
+    payment_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    notes = db.Column(db.Text, nullable=True)
+    recorded_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    sale = db.relationship("Sale", backref=db.backref("payments", cascade="all, delete-orphan"))
+    money_account = db.relationship("MoneyAccount")
+    recorded_by = db.relationship("User")
+
+
+class OtherIncome(db.Model):
+    __tablename__ = "other_income"
+    id = db.Column(db.Integer, primary_key=True)
+    income_type = db.Column(db.String(60), nullable=False, default="other_income")
+    description = db.Column(db.String(200), nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    money_account_id = db.Column(db.Integer, db.ForeignKey("money_accounts.id"), nullable=False)
+    income_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    notes = db.Column(db.Text, nullable=True)
+    recorded_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    money_account = db.relationship("MoneyAccount")
+    recorded_by = db.relationship("User")

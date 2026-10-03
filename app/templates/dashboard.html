@@ -52,14 +52,24 @@
 
 <div class="dashboard-grid">
     <div class="stat-card">
-        <div class="stat-label">Today's Sales</div>
+        <div class="stat-label">Today's Sales Value</div>
         <div class="stat-value">R{{ "%.2f"|format(today_sales_total) }}</div>
         <div class="stat-description">{% if today_sales_count == 0 %}No sales recorded today{% elif today_sales_count == 1 %}1 sale recorded today{% else %}{{ today_sales_count }} sales recorded today{% endif %}</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">This Week</div>
+        <div class="stat-label">Sales Value This Week</div>
         <div class="stat-value">R{{ "%.2f"|format(weekly_revenue) }}</div>
-        <div class="stat-description">Revenue since Monday</div>
+        <div class="stat-description">Agreed value of sales since Monday</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Cash Collected This Week</div>
+        <div class="stat-value">R{{ "%.2f"|format(weekly_cash_collected) }}</div>
+        <div class="stat-description">Customer money actually received</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Customers Owe</div>
+        <div class="stat-value">R{{ "%.2f"|format(customers_owe) }}</div>
+        <div class="stat-description">Outstanding balances on completed sales</div>
     </div>
     <div class="stat-card">
         <div class="stat-label">TYDAL Money</div>
@@ -75,7 +85,7 @@
 
 <div class="tdm-chart-grid">
     <section class="tdm-chart-panel">
-        <div class="tdm-chart-title"><h3>7-Day Sales</h3><p>Daily revenue for the last seven days.</p></div>
+        <div class="tdm-chart-title"><h3>7-Day Sales Value</h3><p>Agreed sales revenue by sale date. This is not the same as cash collected.</p></div>
         <div class="sales-bars">
             {% for row in seven_day_chart %}
             <div class="sales-bar-column">
@@ -89,7 +99,7 @@
     </section>
 
     <section class="tdm-chart-panel">
-        <div class="tdm-chart-title"><h3>How Customers Paid</h3><p>Payment-method share across the last seven days.</p></div>
+        <div class="tdm-chart-title"><h3>How Customers Paid</h3><p>Actual customer money received during the last seven days.</p></div>
         {% if payment_chart %}
         <div class="breakdown-list">
             {% for row in payment_chart %}
@@ -99,7 +109,7 @@
             </div>
             {% endfor %}
         </div>
-        {% else %}<div class="dashboard-empty">Record sales to see payment-method trends.</div>{% endif %}
+        {% else %}<div class="dashboard-empty">Record customer payments to see payment-method trends.</div>{% endif %}
     </section>
 </div>
 
@@ -140,7 +150,14 @@
     <section class="dashboard-panel">
         <div class="dashboard-panel-header"><div><h3>Recent Sales</h3><p>Latest TYDAL customer sales.</p></div><a href="{{ url_for('sales.index') }}">View Sales →</a></div>
         {% if recent_sales %}<div class="dashboard-list">{% for sale in recent_sales %}
-        <div class="dashboard-list-row"><div><strong>{{ sale.sale_number }}</strong><span>{{ sale.sale_date.strftime("%d %b, %H:%M") }}</span></div><strong>+R{{ "%.2f"|format(sale.total_amount) }}</strong></div>
+        <div class="dashboard-list-row">
+            <div>
+                <strong>{{ sale.sale_number }}</strong>
+                <span>{{ sale.sale_date.strftime("%d %b, %H:%M") }} · {{ sale.payment_status|replace("_", " ")|title }}</span>
+                <span>Sale value R{{ "%.2f"|format(sale.total_amount) }} · Paid R{{ "%.2f"|format(sale.amount_paid or 0) }} · Outstanding R{{ "%.2f"|format(sale.outstanding_amount or 0) }}</span>
+            </div>
+            <strong>R{{ "%.2f"|format(sale.total_amount) }}</strong>
+        </div>
         {% endfor %}</div>{% else %}<div class="dashboard-empty">No sales recorded yet.</div>{% endif %}
     </section>
 

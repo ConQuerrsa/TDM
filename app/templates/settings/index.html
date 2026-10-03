@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Settings — TDM{% endblock %}
+{% block content %}
+<div class="page-header"><div><h2>Settings</h2><p>TYDAL business configuration and protected opening information.</p></div></div>
+<div class="dashboard-grid">
+<section class="stat-card"><div class="stat-label">Business</div><div class="stat-value" style="font-size:1.5rem">{{ business.business_name if business else 'TYDAL' }}</div><div class="stat-description">Setup {{ 'completed' if business and business.setup_completed else 'not completed' }}{% if business and business.setup_completed_at %} · {{ business.setup_completed_at.strftime('%d %b %Y') }}{% endif %}</div></section>
+<section class="stat-card"><div class="stat-label">System</div><div class="stat-value" style="font-size:1.5rem">TDM v1.1</div><div class="stat-description">Opening history is protected. Corrections belong in the ledger, not silent edits.</div></section>
+</div>
+<section class="money-section"><div class="section-heading"><div><h3>Money locations</h3><p>Add real places where TYDAL money can physically sit. This is where Petty Cash belongs.</p></div></div>
+<div class="tdm-table-wrapper"><table class="tdm-table"><thead><tr><th>Name</th><th>Type</th><th>Status</th></tr></thead><tbody>{% for a in accounts %}<tr><td><strong>{{ a.name }}</strong></td><td>{{ a.account_type|replace('_',' ')|title }}</td><td>{{ 'Active' if a.is_active else 'Inactive' }}</td></tr>{% endfor %}</tbody></table></div>
+{% if current_user.role == 'admin' %}<form method="POST" action="{{ url_for('settings.add_money_location') }}" class="sale-form-card" style="margin-top:1rem"><div class="form-row"><div class="form-group"><label>New money location</label><input name="name" required placeholder="Petty Cash"></div><div class="form-group"><label>Type</label><select name="account_type"><option value="cash">Cash</option><option value="bank">Bank</option><option value="cash_send">Cash Send</option><option value="other">Other</option></select></div></div><button class="primary-button" type="submit">+ Add Money Location</button></form>{% endif %}
+</section>
+<section class="money-section"><div class="section-heading"><div><h3>Opening records</h3><p>The commissioning snapshot remains part of TYDAL history. TDM intentionally does not offer a button here to rewrite it.</p></div></div></section>
+{% endblock %}

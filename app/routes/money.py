@@ -267,3 +267,34 @@ def transfer():
     )
 
     return redirect(url_for("money.index"))
+# ============================================================
+# TDM v1.1 — OTHER MONEY IN / DEBT RECOVERY
+# ============================================================
+@money.route('/income', methods=['POST'])
+@login_required
+def record_income():
+    from datetime import datetime
+    from app.models import OtherIncome
+    income_type=request.form.get('income_type','other_income').strip()
+    description=request.form.get('description','').strip()
+    notes=request.form.get('notes','').strip()
+    account=db.session.get(MoneyAccount,request.form.get('money_account_id',type=int))
+    try:
+        amount=Decimal(request.form.get('amount','')).quantize(Decimal('0.01'))
+    except (InvalidOperation,ValueError):
+        flash('Enter a valid amount.','error'); return redirect(url_for('money.index'))
+    if amount<=0 or not description or not account or not account.is_active:
+        flash('Enter the amount, description and destination money location.','error'); return redirect(url_for('money.index'))
+    now=datetime.utcnow()
+    try:
+        income=OtherIncome(income_type=income_type,description=description,amount=amount,money_account_id=account.id,
+                          income_date=now,notes=notes or None,recorded_by_id=current_user.id)
+        db.session.add(income); db.session.flush()
+        db.session.add(FinancialTransaction(transaction_type='other_income',amount=amount,to_account_id=account.id,
+                    description=description,transaction_date=now,source_type='other_income',source_id=income.id,
+                    notes=notes or None,created_by_id=current_user.id))
+        db.session.commit()
+    except Exception:
+        db.session.rollback(); flash('Money-in record could not be saved.','error'); return redirect(url_for('money.index'))
+    flash(f'R{amount:.2f} added to {account.name} without counting it as a product sale.','success')
+    return redirect(url_for('money.index'))

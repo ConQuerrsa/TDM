@@ -119,6 +119,7 @@ def index():
     total_contributions = Decimal("0.00")
     total_advances = Decimal("0.00")
     total_withdrawals = Decimal("0.00")
+    total_draws = Decimal("0.00")
     total_personal_expenses = Decimal("0.00")
     total_repayments = Decimal("0.00")
     total_settlements = Decimal("0.00")
@@ -135,6 +136,7 @@ def index():
         contributions = Decimal("0.00")
         advances = Decimal("0.00")
         withdrawals = Decimal("0.00")
+        draws = Decimal("0.00")
         personal_expenses = Decimal("0.00")
         repayments = Decimal("0.00")
         settlements = Decimal("0.00")
@@ -156,6 +158,9 @@ def index():
 
             elif transaction.transaction_type == "withdrawal":
                 withdrawals += amount
+
+            elif transaction.transaction_type == "draw":
+                draws += amount
 
             elif transaction.transaction_type == "personal_expense":
                 personal_expenses += amount
@@ -215,6 +220,7 @@ def index():
             "contributions": contributions,
             "advances": advances,
             "withdrawals": withdrawals,
+            "draws": draws,
             "personal_expenses": personal_expenses,
             "repayments": repayments,
             "settlements": settlements,
@@ -231,6 +237,7 @@ def index():
         total_contributions += contributions
         total_advances += advances
         total_withdrawals += withdrawals
+        total_draws += draws
         total_personal_expenses += personal_expenses
         total_repayments += repayments
         total_settlements += settlements
@@ -263,6 +270,7 @@ def index():
         total_contributions=total_contributions,
         total_advances=total_advances,
         total_withdrawals=total_withdrawals,
+        total_draws=total_draws,
         total_personal_expenses=total_personal_expenses,
         total_repayments=total_repayments,
         total_settlements=total_settlements
@@ -311,6 +319,7 @@ def record_transaction():
     "contribution",
     "advance",
     "withdrawal",
+    "draw",
     "personal_expense",
     "repayment",
     "settlement"
@@ -426,7 +435,7 @@ def record_transaction():
     # Must not exceed actual account balance.
     # --------------------------------------------------------
 
-    if transaction_type in ["withdrawal", "settlement"]:
+    if transaction_type in ["withdrawal", "draw", "settlement"]:
 
         available_balance = get_account_balance(
             account.id
@@ -455,7 +464,10 @@ def record_transaction():
             f"{partner.name} advanced money to TYDAL",
 
         "withdrawal":
-            f"{partner.name} withdrew TYDAL money",
+            f"{partner.name} withdrew TYDAL money (repayment expected)",
+
+        "draw":
+            f"{partner.name} took a non-repayable partner draw",
 
         "personal_expense":
             f"{partner.name} paid a TYDAL expense personally",
@@ -557,7 +569,7 @@ def record_transaction():
             )
 
 
-        elif transaction_type in ["withdrawal", "settlement"]:
+        elif transaction_type in ["withdrawal", "draw", "settlement"]:
 
             ledger_transaction = FinancialTransaction(
                 transaction_type=f"partner_{transaction_type}",
@@ -595,9 +607,15 @@ def record_transaction():
         return redirect(url_for("partners.index"))
 
 
+    account_suffix = (
+        f" using {account.name}"
+        if account
+        else ""
+    )
+
     flash(
         f"R{amount:.2f} {transaction_type.replace('_', ' ')} "
-        f"recorded for {partner.name}.",
+        f"recorded for {partner.name}{account_suffix}.",
         "success"
     )
 
