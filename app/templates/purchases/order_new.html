@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}New Supplier Order | TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>New Supplier Order</h1>
+        <p>
+            Record stock ordered from a supplier before it physically arrives.
+        </p>
+    </div>
+
+    <a href="{{ url_for('purchases.index') }}" class="secondary-button">
+        ← Purchases
+    </a>
+
+</div>
+
+
+<form
+    method="POST"
+    action="{{ url_for('purchases.new_supplier_order') }}"
+    class="purchase-form"
+>
+
+    <!-- ==================================================
+         ORDER DETAILS
+         ================================================== -->
+
+    <section class="form-card">
+
+        <div class="section-heading">
+
+            <div>
+                <h3>Order Details</h3>
+
+                <p>
+                    This creates an in-transit supplier order only.
+                    It will not add available inventory.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="supplier">
+                    Supplier
+                </label>
+
+                <input
+                    type="text"
+                    id="supplier"
+                    name="supplier"
+                    placeholder="e.g. Alibaba"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="goodsCost">
+                    Goods Cost
+                </label>
+
+                <input
+                    type="number"
+                    id="goodsCost"
+                    name="goods_cost"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                >
+
+                <small>
+                    Cost of the goods before duties, shipping
