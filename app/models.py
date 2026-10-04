@@ -970,7 +970,210 @@ class PurchaseItem(db.Model):
 # ============================================================
 # CENTRAL FINANCIAL LEDGER
 # ============================================================
+# ============================================================
+# IN-TRANSIT SUPPLIER ORDERS / LANDED COSTS
+# ============================================================
 
+class SupplierOrder(db.Model):
+    """
+    Supplier order that exists before stock physically arrives.
+
+    Important:
+    - Recording an order does not create available stock.
+    - Historical goods payments do not deduct current TYDAL money.
+    - Duties, shipping and clearing costs are attached separately.
+    """
+
+    __tablename__ = "supplier_orders"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    order_number = db.Column(
+        db.String(40),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    supplier = db.Column(
+        db.String(150),
+        nullable=False
+    )
+
+    goods_cost = db.Column(
+        db.Numeric(12, 2),
+        nullable=False,
+        default=Decimal("0.00")
+    )
+
+    status = db.Column(
+        db.String(30),
+        nullable=False,
+        default="in_transit"
+    )
+
+    order_date = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    is_historical = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
+    notes = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    created_by_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    created_by = db.relationship(
+        "User"
+    )
+
+    costs = db.relationship(
+        "SupplierOrderCost",
+        back_populates="order",
+        cascade="all, delete-orphan",
+        order_by="SupplierOrderCost.cost_date"
+    )
+
+    @property
+    def extra_cost_total(self):
+        return sum(
+            (
+                Decimal(str(cost.amount or 0))
+                for cost in self.costs
+            ),
+            Decimal("0.00")
+        )
+
+    @property
+    def landed_cost(self):
+        return (
+            Decimal(str(self.goods_cost or 0))
+            + self.extra_cost_total
+        )
+
+
+class SupplierOrderCost(db.Model):
+    """
+    Additional landed cost attached to a supplier order.
+
+    Examples:
+    - customs/import duties
+    - shipping
+    - clearing charges
+
+    Funding can come from:
+    - TYDAL money
+    - a partner's personal money
+    """
+
+    __tablename__ = "supplier_order_costs"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    supplier_order_id = db.Column(
+        db.Integer,
+        db.ForeignKey("supplier_orders.id"),
+        nullable=False,
+        index=True
+    )
+
+    cost_type = db.Column(
+        db.String(50),
+        nullable=False
+    )
+
+    description = db.Column(
+        db.String(200),
+        nullable=False
+    )
+
+    amount = db.Column(
+        db.Numeric(12, 2),
+        nullable=False
+    )
+
+    funding_type = db.Column(
+        db.String(30),
+        nullable=False
+    )
+
+    money_account_id = db.Column(
+        db.Integer,
+        db.ForeignKey("money_accounts.id"),
+        nullable=True
+    )
+
+    partner_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=True
+    )
+
+    cost_date = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    notes = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    created_by_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    order = db.relationship(
+        "SupplierOrder",
+        back_populates="costs"
+    )
+
+    money_account = db.relationship(
+        "MoneyAccount"
+    )
+
+    partner = db.relationship(
+        "User",
+        foreign_keys=[partner_id]
+    )
+
+    created_by = db.relationship(
+        "User",
+        foreign_keys=[created_by_id]
+    )
 class FinancialTransaction(db.Model):
     """
     Central financial history for TYDAL.
