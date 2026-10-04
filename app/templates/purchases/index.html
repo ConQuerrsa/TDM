@@ -9,13 +9,21 @@
     <div>
         <h1>Purchases</h1>
         <p>
-            Supplier orders and stock coming into TYDAL.
+            Track supplier orders from order placement to stock received.
         </p>
     </div>
 
-    <a href="{{ url_for('purchases.new') }}" class="primary-button">
-        + New Purchase
-    </a>
+    <div>
+        <a href="{{ url_for('purchases.new_supplier_order') }}"
+           class="secondary-button">
+            + Supplier Order
+        </a>
+
+        <a href="{{ url_for('purchases.new') }}"
+           class="primary-button">
+            + Received Purchase
+        </a>
+    </div>
 
 </div>
 
@@ -37,7 +45,7 @@
         </div>
 
         <div class="stat-description">
-            Recent supplier orders
+            Completed stock purchases
         </div>
 
     </div>
@@ -80,7 +88,7 @@
 
 
 <!-- ======================================================
-     PURCHASE HISTORY
+     IN-TRANSIT / SUPPLIER ORDERS
      ====================================================== -->
 
 <section class="purchases-section">
@@ -88,10 +96,171 @@
     <div class="section-heading">
 
         <div>
-            <h3>Purchase History</h3>
+            <h3>Supplier Orders</h3>
 
             <p>
-                Stock orders recorded in TDM.
+                Orders placed with suppliers that are being tracked
+                before they become available stock.
+            </p>
+        </div>
+
+        <a href="{{ url_for('purchases.new_supplier_order') }}"
+           class="secondary-button">
+            + New Supplier Order
+        </a>
+
+    </div>
+
+
+    {% if supplier_orders %}
+
+    <div class="purchase-list">
+
+        {% for order in supplier_orders %}
+
+        <article class="purchase-card">
+
+            <div class="purchase-card-main">
+
+                <div class="purchase-icon">
+                    ↗
+                </div>
+
+                <div>
+
+                    <div class="purchase-reference">
+                        {{ order.order_number }}
+                    </div>
+
+                    <h4>
+                        {{ order.supplier }}
+                    </h4>
+
+                    <div class="purchase-meta">
+
+                        {{ order.order_date.strftime("%d %b %Y, %H:%M") }}
+
+                        ·
+
+                        {{ order.status|replace('_', ' ')|title }}
+
+                        {% if order.is_historical %}
+                            · Historical
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="purchase-card-side">
+
+                <strong>
+                    R{{ "%.2f"|format(order.landed_cost) }}
+                </strong>
+
+                <span>
+                    Landed cost
+                </span>
+
+            </div>
+
+
+            <div class="purchase-items">
+
+                <div class="purchase-item-row">
+
+                    <div>
+                        <strong>Goods Cost</strong>
+
+                        <span>
+                            Supplier goods
+                        </span>
+                    </div>
+
+                    <strong>
+                        R{{ "%.2f"|format(order.goods_cost) }}
+                    </strong>
+
+                </div>
+
+
+                <div class="purchase-item-row">
+
+                    <div>
+                        <strong>Additional Costs</strong>
+
+                        <span>
+                            Duties, shipping and other landed costs
+                        </span>
+                    </div>
+
+                    <strong>
+                        R{{ "%.2f"|format(order.extra_cost_total) }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div style="margin-top: 1rem;">
+
+                <a href="{{ url_for(
+                    'purchases.supplier_order_detail',
+                    order_id=order.id
+                ) }}"
+                   class="secondary-button">
+                    View Order →
+                </a>
+
+            </div>
+
+        </article>
+
+        {% endfor %}
+
+    </div>
+
+
+    {% else %}
+
+    <div class="empty-state">
+
+        <h4>No supplier orders being tracked</h4>
+
+        <p>
+            Use Supplier Orders for stock that has been ordered
+            but has not yet arrived.
+        </p>
+
+        <a href="{{ url_for('purchases.new_supplier_order') }}"
+           class="secondary-button">
+            Record Supplier Order
+        </a>
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+<!-- ======================================================
+     RECEIVED PURCHASE HISTORY
+     ====================================================== -->
+
+<section class="purchases-section">
+
+    <div class="section-heading">
+
+        <div>
+            <h3>Received Purchase History</h3>
+
+            <p>
+                Supplier purchases already received into TYDAL stock.
             </p>
         </div>
 
@@ -127,7 +296,7 @@
                         {{ purchase.purchase_date.strftime("%d %b %Y, %H:%M") }}
 
                         {% if purchase.money_account %}
-                        · {{ purchase.money_account.name }}
+                            · {{ purchase.money_account.name }}
                         {% endif %}
 
                     </div>
@@ -191,14 +360,16 @@
 
     <div class="empty-state">
 
-        <h4>No purchases recorded yet</h4>
+        <h4>No received purchases recorded yet</h4>
 
         <p>
-            Your supplier and stock orders will appear here.
+            Stock that has physically arrived and been recorded
+            will appear here.
         </p>
 
-        <a href="{{ url_for('purchases.new') }}" class="primary-button">
-            Record First Purchase
+        <a href="{{ url_for('purchases.new') }}"
+           class="primary-button">
+            Record Received Purchase
         </a>
 
     </div>
