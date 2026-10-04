@@ -968,9 +968,6 @@ class PurchaseItem(db.Model):
 
 
 # ============================================================
-# CENTRAL FINANCIAL LEDGER
-# ============================================================
-# ============================================================
 # IN-TRANSIT SUPPLIER ORDERS / LANDED COSTS
 # ============================================================
 
@@ -1174,6 +1171,11 @@ class SupplierOrderCost(db.Model):
         "User",
         foreign_keys=[created_by_id]
     )
+
+
+# ============================================================
+# CENTRAL FINANCIAL LEDGER
+# ============================================================
 class FinancialTransaction(db.Model):
     """
     Central financial history for TYDAL.
