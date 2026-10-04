@@ -132,9 +132,9 @@
 
             <strong>
                 {% if supplier_order.is_historical %}
-                    Historical
+                Historical
                 {% else %}
-                    Current
+                Current
                 {% endif %}
             </strong>
 
@@ -181,80 +181,80 @@
 
     {% if supplier_order.costs %}
 
-        <div class="activity-list">
+    <div class="activity-list">
 
-            {% for cost in supplier_order.costs %}
+        {% for cost in supplier_order.costs %}
 
-            <div class="activity-item">
+        <div class="activity-item">
 
-                <div>
+            <div>
 
-                    <strong>
-                        {{ cost.description }}
-                    </strong>
+                <strong>
+                    {{ cost.description }}
+                </strong>
 
-                    <p>
-                        {{ cost.cost_type|replace('_', ' ')|title }}
-                        ·
-                        {{ cost.cost_date.strftime('%d %b %Y %H:%M') }}
-                    </p>
+                <p>
+                    {{ cost.cost_type|replace('_', ' ')|title }}
+                    ·
+                    {{ cost.cost_date.strftime('%d %b %Y %H:%M') }}
+                </p>
 
-                    <small>
+                <small>
 
-                        {% if cost.funding_type == "tydal_money" %}
+                    {% if cost.funding_type == "tydal_money" %}
 
-                            Paid using TYDAL money
+                    Paid using TYDAL money
 
-                            {% if cost.money_account %}
-                                · {{ cost.money_account.name }}
-                            {% endif %}
+                    {% if cost.money_account %}
+                    · {{ cost.money_account.name }}
+                    {% endif %}
 
-                        {% elif cost.funding_type == "partner_personal" %}
+                    {% elif cost.funding_type == "partner_personal" %}
 
-                            Paid personally
+                    Paid personally
 
-                            {% if cost.partner %}
-                                · {{ cost.partner.full_name }}
-                            {% endif %}
-
-                        {% endif %}
-
-                    </small>
-
-
-                    {% if cost.notes %}
-
-                    <small>
-                        {{ cost.notes }}
-                    </small>
+                    {% if cost.partner %}
+                    · {{ cost.partner.name }}
+                    {% endif %}
 
                     {% endif %}
 
-                </div>
+                </small>
 
 
-                <strong>
-                    R{{ "%.2f"|format(cost.amount) }}
-                </strong>
+                {% if cost.notes %}
+
+                <small>
+                    {{ cost.notes }}
+                </small>
+
+                {% endif %}
 
             </div>
 
-            {% endfor %}
+
+            <strong>
+                R{{ "%.2f"|format(cost.amount) }}
+            </strong>
 
         </div>
+
+        {% endfor %}
+
+    </div>
 
     {% else %}
 
-        <div class="empty-state">
+    <div class="empty-state">
 
-            <h3>No landed costs yet</h3>
+        <h3>No landed costs yet</h3>
 
-            <p>
-                Add customs duties, shipping, clearing charges
-                or other costs below.
-            </p>
+        <p>
+            Add customs duties, shipping, clearing charges
+            or other costs below.
+        </p>
 
-        </div>
+    </div>
 
     {% endif %}
 
@@ -267,15 +267,10 @@
 
 {% if supplier_order.status != "received" %}
 
-<form
-    method="POST"
-    action="{{ url_for(
+<form method="POST" action="{{ url_for(
         'purchases.add_supplier_order_cost',
         order_id=supplier_order.id
-    ) }}"
-    class="purchase-form"
-    id="landedCostForm"
->
+    ) }}" class="purchase-form" id="landedCostForm">
 
     <section class="form-card">
 
@@ -301,11 +296,7 @@
                     Cost Type
                 </label>
 
-                <select
-                    id="costType"
-                    name="cost_type"
-                    required
-                >
+                <select id="costType" name="cost_type" required>
 
                     <option value="">
                         Choose cost type
@@ -342,13 +333,8 @@
                     Description
                 </label>
 
-                <input
-                    type="text"
-                    id="costDescription"
-                    name="description"
-                    placeholder="e.g. Customs duties for Alibaba parcel"
-                    required
-                >
+                <input type="text" id="costDescription" name="description"
+                    placeholder="e.g. Customs duties for Alibaba parcel" required>
 
             </div>
 
@@ -359,15 +345,7 @@
                     Amount
                 </label>
 
-                <input
-                    type="number"
-                    id="costAmount"
-                    name="amount"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                >
+                <input type="number" id="costAmount" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
 
             </div>
 
@@ -378,11 +356,7 @@
                     Date
                 </label>
 
-                <input
-                    type="datetime-local"
-                    id="costDate"
-                    name="cost_date"
-                >
+                <input type="datetime-local" id="costDate" name="cost_date">
 
                 <small>
                     Leave blank to use the current date and time.
@@ -403,11 +377,7 @@
                 Who Paid?
             </label>
 
-            <select
-                id="fundingType"
-                name="funding_type"
-                required
-            >
+            <select id="fundingType" name="funding_type" required>
 
                 <option value="">
                     Choose funding source
@@ -430,20 +400,13 @@
              TYDAL MONEY SOURCE
              ============================================== -->
 
-        <div
-            id="tydalFundingFields"
-            class="form-group"
-            hidden
-        >
+        <div id="tydalFundingFields" class="form-group" hidden>
 
             <label for="moneyAccount">
                 TYDAL Money Location
             </label>
 
-            <select
-                id="moneyAccount"
-                name="money_account_id"
-            >
+            <select id="moneyAccount" name="money_account_id">
 
                 <option value="">
                     Choose money location
@@ -472,20 +435,13 @@
              PARTNER PERSONAL SOURCE
              ============================================== -->
 
-        <div
-            id="partnerFundingFields"
-            class="form-group"
-            hidden
-        >
+        <div id="partnerFundingFields" class="form-group" hidden>
 
             <label for="partner">
                 Partner Who Paid
             </label>
 
-            <select
-                id="partner"
-                name="partner_id"
-            >
+            <select id="partner" name="partner_id">
 
                 <option value="">
                     Choose partner
@@ -494,7 +450,7 @@
                 {% for partner in partners %}
 
                 <option value="{{ partner.id }}">
-                    {{ partner.full_name }}
+                    {{ partner.name }}
                 </option>
 
                 {% endfor %}
@@ -516,12 +472,7 @@
                 Notes
             </label>
 
-            <textarea
-                id="costNotes"
-                name="notes"
-                rows="3"
-                placeholder="Optional details about this cost..."
-            ></textarea>
+            <textarea id="costNotes" name="notes" rows="3" placeholder="Optional details about this cost..."></textarea>
 
         </div>
 
@@ -558,10 +509,7 @@
             </div>
 
 
-            <button
-                type="submit"
-                class="primary-button purchase-submit"
-            >
+            <button type="submit" class="primary-button purchase-submit">
                 Add Landed Cost
             </button>
 

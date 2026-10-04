@@ -94,9 +94,9 @@ def index():
     partners = (
         User.query
         .filter(User.is_active.is_(True))
-        .order_by(User.full_name.asc())
+        .order_by(User.name.asc())
         .all()
-        )
+    )
 
     return render_template(
         "money/index.html",

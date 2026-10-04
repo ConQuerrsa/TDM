@@ -15,12 +15,8 @@
 
     <div class="money-header-actions">
 
-        <button
-            class="secondary-button"
-            type="button"
-            onclick="openTransferModal()"
-            {% if account_rows|length < 2 %}disabled{% endif %}
-        >
+        <button class="secondary-button" type="button" onclick="openTransferModal()" {% if account_rows|length < 2
+            %}disabled{% endif %}>
             Transfer Money
         </button>
 
@@ -93,11 +89,11 @@
                 <div class="money-account-icon">
 
                     {% if row.account.account_type == "cash" %}
-                        R
+                    R
                     {% elif row.account.account_type == "bank" %}
-                        B
+                    B
                     {% else %}
-                        ₿
+                    ₿
                     {% endif %}
 
                 </div>
@@ -151,10 +147,7 @@
             locations will appear here after Business Setup.
         </p>
 
-        <a
-            href="{{ url_for('setup.index') }}"
-            class="primary-button"
-        >
+        <a href="{{ url_for('setup.index') }}" class="primary-button">
             Open Business Setup
         </a>
 
@@ -187,11 +180,7 @@
     </div>
 
 
-    <form
-        method="POST"
-        action="{{ url_for('money.record_income') }}"
-        class="sale-form-card"
-    >
+    <form method="POST" action="{{ url_for('money.record_income') }}" class="sale-form-card">
 
         <div class="form-row">
 
@@ -201,11 +190,7 @@
                     Type
                 </label>
 
-                <select
-                    name="income_type"
-                    id="incomeType"
-                    required
-                >
+                <select name="income_type" id="incomeType" required>
 
                     <option value="historical_debt_recovery">
                         Historical Debt Recovery
@@ -230,15 +215,7 @@
                     Amount
                 </label>
 
-                <input
-                    name="amount"
-                    id="incomeAmount"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                >
+                <input name="amount" id="incomeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
 
             </div>
 
@@ -251,11 +228,7 @@
                 Put Money In
             </label>
 
-            <select
-                name="money_account_id"
-                id="incomeAccount"
-                required
-            >
+            <select name="money_account_id" id="incomeAccount" required>
 
                 <option value="">
                     Choose money location
@@ -280,12 +253,7 @@
                 Description
             </label>
 
-            <input
-                name="description"
-                id="incomeDescription"
-                required
-                placeholder="e.g. Old TYDAL debt repaid"
-            >
+            <input name="description" id="incomeDescription" required placeholder="e.g. Old TYDAL debt repaid">
 
         </div>
 
@@ -296,237 +264,13 @@
                 Notes
             </label>
 
-            <textarea
-                name="notes"
-                id="incomeNotes"
-                rows="2"
-                placeholder="Explain where the money came from"
-            ></textarea>
+            <textarea name="notes" id="incomeNotes" rows="2" placeholder="Explain where the money came from"></textarea>
 
         </div>
 
 
-        <button
-            class="primary-button"
-            type="submit"
-        >
+        <button class="primary-button" type="submit">
             + Record Money In
-        </button>
-
-    </form>
-
-</section>
-
-
-<!-- ======================================================
-     OPENING MONEY CORRECTION
-     ====================================================== -->
-
-<section class="money-section">
-
-    <div class="section-heading">
-
-        <div>
-
-            <h3>Opening Money Correction</h3>
-
-            <p>
-                Reclassify money that was included in TYDAL's
-                opening balance but was actually owed by a partner.
-            </p>
-
-        </div>
-
-    </div>
-
-
-    <div class="info-card">
-
-        <strong>
-            This is not an expense or partner draw.
-        </strong>
-
-        <p>
-            The selected amount is removed from the money location
-            and reclassified as money the selected partner owes TYDAL.
-            This preserves the audit trail without creating fake
-            income or expenses.
-        </p>
-
-    </div>
-
-
-    <form
-        method="POST"
-        action="{{ url_for('purchases.reclassify_opening_money') }}"
-        class="sale-form-card"
-    >
-
-        <div class="form-row">
-
-            <div class="form-group">
-
-                <label for="correctionAccount">
-                    Money Location
-                </label>
-
-                <select
-                    name="money_account_id"
-                    id="correctionAccount"
-                    required
-                >
-
-                    <option value="">
-                        Choose money location
-                    </option>
-
-                    {% for row in account_rows %}
-
-                    <option
-                        value="{{ row.account.id }}"
-                        data-balance="{{ row.balance }}"
-                    >
-                        {{ row.account.name }}
-                        — R{{ "%.2f"|format(row.balance) }}
-                    </option>
-
-                    {% endfor %}
-
-                </select>
-
-                <small id="correctionBalance">
-                    Select the location containing the incorrectly
-                    classified money.
-                </small>
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="correctionPartner">
-                    Partner Who Owes TYDAL
-                </label>
-
-                <select
-                    name="partner_id"
-                    id="correctionPartner"
-                    required
-                >
-
-                    <option value="">
-                        Choose partner
-                    </option>
-
-                    {% for partner in partners %}
-
-                    <option value="{{ partner.id }}">
-                        {{ partner.full_name }}
-                    </option>
-
-                    {% endfor %}
-
-                </select>
-
-            </div>
-
-        </div>
-
-
-        <div class="form-row">
-
-            <div class="form-group">
-
-                <label for="correctionAmount">
-                    Amount
-                </label>
-
-                <input
-                    type="number"
-                    name="amount"
-                    id="correctionAmount"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="correctionDate">
-                    Original / Correction Date
-                </label>
-
-                <input
-                    type="datetime-local"
-                    name="transaction_date"
-                    id="correctionDate"
-                >
-
-                <small>
-                    Leave blank if the backend should use the current time.
-                </small>
-
-            </div>
-
-        </div>
-
-
-        <div class="form-group">
-
-            <label for="correctionDescription">
-                Description
-            </label>
-
-            <input
-                type="text"
-                name="description"
-                id="correctionDescription"
-                maxlength="255"
-                placeholder="e.g. Opening money actually owed by Manqoba"
-                required
-            >
-
-        </div>
-
-
-        <div class="form-group">
-
-            <label for="correctionNotes">
-                Notes
-            </label>
-
-            <textarea
-                name="notes"
-                id="correctionNotes"
-                rows="3"
-                placeholder="Explain why this opening money is being reclassified"
-            ></textarea>
-
-        </div>
-
-
-        <div class="transfer-info">
-
-            <strong>
-                TYDAL money decreases here, but no expense is created.
-            </strong>
-
-            <span>
-                The same amount becomes a partner receivable instead.
-            </span>
-
-        </div>
-
-
-        <button
-            type="submit"
-            class="primary-button"
-        >
-            Record Opening Correction
         </button>
 
     </form>
@@ -573,36 +317,36 @@
                 <div class="transaction-icon">
 
                     {% if transaction.transaction_type in [
-                        "sale",
-                        "sale_payment",
-                        "other_income",
-                        "partner_contribution",
-                        "partner_advance",
-                        "partner_repayment"
+                    "sale",
+                    "sale_payment",
+                    "other_income",
+                    "partner_contribution",
+                    "partner_advance",
+                    "partner_repayment"
                     ] %}
 
-                        +
+                    +
 
                     {% elif transaction.transaction_type in [
-                        "expense",
-                        "purchase",
-                        "withdrawal",
-                        "partner_withdrawal",
-                        "partner_draw",
-                        "partner_settlement",
-                        "supplier_order_cost",
-                        "opening_reclassification"
+                    "expense",
+                    "purchase",
+                    "withdrawal",
+                    "partner_withdrawal",
+                    "partner_draw",
+                    "partner_settlement",
+                    "supplier_order_cost",
+                    "opening_reclassification"
                     ] %}
 
-                        −
+                    −
 
                     {% elif transaction.transaction_type == "transfer" %}
 
-                        ↔
+                    ↔
 
                     {% else %}
 
-                        •
+                    •
 
                     {% endif %}
 
@@ -613,12 +357,12 @@
 
                     <strong>
                         {{ transaction.description or
-                           transaction.transaction_type|replace("_", " ")|title }}
+                        transaction.transaction_type|replace("_", " ")|title }}
                     </strong>
 
                     <span>
                         {{ transaction.transaction_date.strftime(
-                            "%d %b %Y · %H:%M"
+                        "%d %b %Y · %H:%M"
                         ) }}
                     </span>
 
@@ -636,9 +380,9 @@
             ">
 
                 {% if transaction.to_account_id and not transaction.from_account_id %}
-                    +
+                +
                 {% elif transaction.from_account_id and not transaction.to_account_id %}
-                    −
+                −
                 {% endif %}
 
                 R{{ "%.2f"|format(transaction.amount) }}
@@ -676,15 +420,9 @@
      TRANSFER MONEY MODAL
      ====================================================== -->
 
-<div
-    class="tdm-modal"
-    id="transferModal"
->
+<div class="tdm-modal" id="transferModal">
 
-    <div
-        class="tdm-modal-backdrop"
-        onclick="closeTransferModal()"
-    ></div>
+    <div class="tdm-modal-backdrop" onclick="closeTransferModal()"></div>
 
 
     <div class="tdm-modal-card">
@@ -709,22 +447,14 @@
             </div>
 
 
-            <button
-                class="modal-close"
-                type="button"
-                onclick="closeTransferModal()"
-                aria-label="Close"
-            >
+            <button class="modal-close" type="button" onclick="closeTransferModal()" aria-label="Close">
                 ×
             </button>
 
         </div>
 
 
-        <form
-            method="POST"
-            action="{{ url_for('money.transfer') }}"
-        >
+        <form method="POST" action="{{ url_for('money.transfer') }}">
 
             <div class="form-group">
 
@@ -732,11 +462,7 @@
                     From
                 </label>
 
-                <select
-                    name="from_account_id"
-                    id="fromAccount"
-                    required
-                >
+                <select name="from_account_id" id="fromAccount" required>
 
                     <option value="">
                         Choose money location
@@ -744,10 +470,7 @@
 
                     {% for row in account_rows %}
 
-                    <option
-                        value="{{ row.account.id }}"
-                        data-balance="{{ row.balance }}"
-                    >
+                    <option value="{{ row.account.id }}" data-balance="{{ row.balance }}">
                         {{ row.account.name }}
                         — R{{ "%.2f"|format(row.balance) }}
                     </option>
@@ -775,11 +498,7 @@
                     To
                 </label>
 
-                <select
-                    name="to_account_id"
-                    id="toAccount"
-                    required
-                >
+                <select name="to_account_id" id="toAccount" required>
 
                     <option value="">
                         Choose destination
@@ -808,15 +527,8 @@
 
                     <span>R</span>
 
-                    <input
-                        type="number"
-                        name="amount"
-                        id="transferAmount"
-                        min="0.01"
-                        step="0.01"
-                        placeholder="0.00"
-                        required
-                    >
+                    <input type="number" name="amount" id="transferAmount" min="0.01" step="0.01" placeholder="0.00"
+                        required>
 
                 </div>
 
@@ -835,13 +547,8 @@
 
                 </label>
 
-                <input
-                    type="text"
-                    name="description"
-                    id="transferDescription"
-                    maxlength="255"
-                    placeholder="e.g. Cash deposited into Capitec"
-                >
+                <input type="text" name="description" id="transferDescription" maxlength="255"
+                    placeholder="e.g. Cash deposited into Capitec">
 
             </div>
 
@@ -858,12 +565,8 @@
 
                 </label>
 
-                <textarea
-                    name="notes"
-                    id="transferNotes"
-                    rows="3"
-                    placeholder="Anything the partners should know about this transfer"
-                ></textarea>
+                <textarea name="notes" id="transferNotes" rows="3"
+                    placeholder="Anything the partners should know about this transfer"></textarea>
 
             </div>
 
@@ -883,18 +586,11 @@
 
             <div class="modal-actions">
 
-                <button
-                    type="button"
-                    class="secondary-button"
-                    onclick="closeTransferModal()"
-                >
+                <button type="button" class="secondary-button" onclick="closeTransferModal()">
                     Cancel
                 </button>
 
-                <button
-                    type="submit"
-                    class="primary-button"
-                >
+                <button type="submit" class="primary-button">
                     Record Transfer
                 </button>
 
