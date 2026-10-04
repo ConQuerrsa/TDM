@@ -1,42 +1,45 @@
 {% extends "base.html" %}
 
-{% block title %}Money — TDM
-<section class="money-section">
-  <div class="section-heading"><div><h3>Other money in</h3><p>Debt recoveries and other TYDAL cash receipts that are not product sales.</p></div></div>
-  <form method="POST" action="{{ url_for('money.record_income') }}" class="sale-form-card">
-    <div class="form-row"><div class="form-group"><label>Type</label><select name="income_type"><option value="historical_debt_recovery">Historical debt recovery</option><option value="other_income">Other income</option><option value="refund">Refund received</option></select></div>
-    <div class="form-group"><label>Amount</label><input name="amount" type="number" min="0.01" step="0.01" required></div></div>
-    <div class="form-group"><label>Put money in</label><select name="money_account_id" required>{% for account in accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></div>
-    <div class="form-group"><label>Description</label><input name="description" required placeholder="e.g. Old TYDAL debt repaid"></div>
-    <div class="form-group"><label>Notes</label><textarea name="notes" rows="2" placeholder="Explain where the old debt came from"></textarea></div>
-    <button class="primary-button" type="submit">+ Record Money In</button>
-  </form>
-</section>
-
-{% endblock %}
+{% block title %}Money | TDM{% endblock %}
 
 {% block content %}
 
 <div class="page-header money-page-header">
+
     <div>
         <h2>Money</h2>
-        <p>Know exactly where TYDAL's money is and how it has moved.</p>
+        <p>
+            Know exactly where TYDAL's money is and how it has moved.
+        </p>
     </div>
 
     <div class="money-header-actions">
-        <button class="secondary-button" type="button" onclick="openTransferModal()" {% if account_rows|length < 2
-            %}disabled{% endif %}>
+
+        <button
+            class="secondary-button"
+            type="button"
+            onclick="openTransferModal()"
+            {% if account_rows|length < 2 %}disabled{% endif %}
+        >
             Transfer Money
         </button>
+
     </div>
+
 </div>
 
 
-<!-- TOTAL BUSINESS MONEY -->
+<!-- ======================================================
+     TOTAL BUSINESS MONEY
+     ====================================================== -->
+
 <section class="money-hero">
 
     <div>
-        <span class="money-hero-label">TOTAL TYDAL MONEY</span>
+
+        <span class="money-hero-label">
+            TOTAL TYDAL MONEY
+        </span>
 
         <div class="money-hero-value">
             R{{ "%.2f"|format(total_business_money) }}
@@ -45,6 +48,7 @@
         <p>
             Business money across all active locations.
         </p>
+
     </div>
 
     <div class="money-hero-status">
@@ -55,16 +59,24 @@
 </section>
 
 
-<!-- WHERE THE MONEY IS -->
+<!-- ======================================================
+     WHERE THE MONEY IS
+     ====================================================== -->
+
 <section class="money-section">
 
     <div class="section-heading">
+
         <div>
+
             <h3>Where is TYDAL's money?</h3>
+
             <p>
                 These are the places currently holding business money.
             </p>
+
         </div>
+
     </div>
 
 
@@ -79,28 +91,37 @@
             <div class="money-account-top">
 
                 <div class="money-account-icon">
+
                     {% if row.account.account_type == "cash" %}
-                    R
+                        R
                     {% elif row.account.account_type == "bank" %}
-                    B
+                        B
                     {% else %}
-                    ₿
+                        ₿
                     {% endif %}
+
                 </div>
 
+
                 <div class="money-account-info">
-                    <strong>{{ row.account.name }}</strong>
+
+                    <strong>
+                        {{ row.account.name }}
+                    </strong>
 
                     <span>
                         {{ row.account.account_type|replace("_", " ")|title }}
                     </span>
+
                 </div>
 
             </div>
 
+
             <div class="money-account-balance">
                 R{{ "%.2f"|format(row.balance) }}
             </div>
+
 
             <div class="money-account-footer">
                 TYDAL funds held here
@@ -112,20 +133,28 @@
 
     </div>
 
+
     {% else %}
 
     <div class="empty-state">
 
-        <div class="empty-state-icon">R</div>
+        <div class="empty-state-icon">
+            R
+        </div>
 
-        <h4>No money locations yet</h4>
+        <h4>
+            No money locations yet
+        </h4>
 
         <p>
             TYDAL's cash holders, bank accounts and other money
             locations will appear here after Business Setup.
         </p>
 
-        <a href="{{ url_for('setup.index') }}" class="primary-button">
+        <a
+            href="{{ url_for('setup.index') }}"
+            class="primary-button"
+        >
             Open Business Setup
         </a>
 
@@ -136,20 +165,398 @@
 </section>
 
 
-<!-- RECENT MONEY MOVEMENT -->
+<!-- ======================================================
+     OTHER MONEY IN
+     ====================================================== -->
+
 <section class="money-section">
 
     <div class="section-heading">
+
         <div>
-            <h3>Recent money movement</h3>
+
+            <h3>Other Money In</h3>
+
+            <p>
+                Debt recoveries and other TYDAL cash receipts
+                that are not product sales.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <form
+        method="POST"
+        action="{{ url_for('money.record_income') }}"
+        class="sale-form-card"
+    >
+
+        <div class="form-row">
+
+            <div class="form-group">
+
+                <label for="incomeType">
+                    Type
+                </label>
+
+                <select
+                    name="income_type"
+                    id="incomeType"
+                    required
+                >
+
+                    <option value="historical_debt_recovery">
+                        Historical Debt Recovery
+                    </option>
+
+                    <option value="other_income">
+                        Other Income
+                    </option>
+
+                    <option value="refund">
+                        Refund Received
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="incomeAmount">
+                    Amount
+                </label>
+
+                <input
+                    name="amount"
+                    id="incomeAmount"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="incomeAccount">
+                Put Money In
+            </label>
+
+            <select
+                name="money_account_id"
+                id="incomeAccount"
+                required
+            >
+
+                <option value="">
+                    Choose money location
+                </option>
+
+                {% for account in accounts %}
+
+                <option value="{{ account.id }}">
+                    {{ account.name }}
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="incomeDescription">
+                Description
+            </label>
+
+            <input
+                name="description"
+                id="incomeDescription"
+                required
+                placeholder="e.g. Old TYDAL debt repaid"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="incomeNotes">
+                Notes
+            </label>
+
+            <textarea
+                name="notes"
+                id="incomeNotes"
+                rows="2"
+                placeholder="Explain where the money came from"
+            ></textarea>
+
+        </div>
+
+
+        <button
+            class="primary-button"
+            type="submit"
+        >
+            + Record Money In
+        </button>
+
+    </form>
+
+</section>
+
+
+<!-- ======================================================
+     OPENING MONEY CORRECTION
+     ====================================================== -->
+
+<section class="money-section">
+
+    <div class="section-heading">
+
+        <div>
+
+            <h3>Opening Money Correction</h3>
+
+            <p>
+                Reclassify money that was included in TYDAL's
+                opening balance but was actually owed by a partner.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="info-card">
+
+        <strong>
+            This is not an expense or partner draw.
+        </strong>
+
+        <p>
+            The selected amount is removed from the money location
+            and reclassified as money the selected partner owes TYDAL.
+            This preserves the audit trail without creating fake
+            income or expenses.
+        </p>
+
+    </div>
+
+
+    <form
+        method="POST"
+        action="{{ url_for('purchases.reclassify_opening_money') }}"
+        class="sale-form-card"
+    >
+
+        <div class="form-row">
+
+            <div class="form-group">
+
+                <label for="correctionAccount">
+                    Money Location
+                </label>
+
+                <select
+                    name="money_account_id"
+                    id="correctionAccount"
+                    required
+                >
+
+                    <option value="">
+                        Choose money location
+                    </option>
+
+                    {% for row in account_rows %}
+
+                    <option
+                        value="{{ row.account.id }}"
+                        data-balance="{{ row.balance }}"
+                    >
+                        {{ row.account.name }}
+                        — R{{ "%.2f"|format(row.balance) }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small id="correctionBalance">
+                    Select the location containing the incorrectly
+                    classified money.
+                </small>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="correctionPartner">
+                    Partner Who Owes TYDAL
+                </label>
+
+                <select
+                    name="partner_id"
+                    id="correctionPartner"
+                    required
+                >
+
+                    <option value="">
+                        Choose partner
+                    </option>
+
+                    {% for partner in partners %}
+
+                    <option value="{{ partner.id }}">
+                        {{ partner.full_name }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-row">
+
+            <div class="form-group">
+
+                <label for="correctionAmount">
+                    Amount
+                </label>
+
+                <input
+                    type="number"
+                    name="amount"
+                    id="correctionAmount"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="correctionDate">
+                    Original / Correction Date
+                </label>
+
+                <input
+                    type="datetime-local"
+                    name="transaction_date"
+                    id="correctionDate"
+                >
+
+                <small>
+                    Leave blank if the backend should use the current time.
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="correctionDescription">
+                Description
+            </label>
+
+            <input
+                type="text"
+                name="description"
+                id="correctionDescription"
+                maxlength="255"
+                placeholder="e.g. Opening money actually owed by Manqoba"
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="correctionNotes">
+                Notes
+            </label>
+
+            <textarea
+                name="notes"
+                id="correctionNotes"
+                rows="3"
+                placeholder="Explain why this opening money is being reclassified"
+            ></textarea>
+
+        </div>
+
+
+        <div class="transfer-info">
+
+            <strong>
+                TYDAL money decreases here, but no expense is created.
+            </strong>
+
+            <span>
+                The same amount becomes a partner receivable instead.
+            </span>
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="primary-button"
+        >
+            Record Opening Correction
+        </button>
+
+    </form>
+
+</section>
+
+
+<!-- ======================================================
+     RECENT MONEY MOVEMENT
+     ====================================================== -->
+
+<section class="money-section">
+
+    <div class="section-heading">
+
+        <div>
+
+            <h3>Recent Money Movement</h3>
+
             <p>
                 The latest financial activity recorded by TDM.
             </p>
+
         </div>
+
 
         <span class="transaction-count">
             {{ recent_transactions|length }} recent
         </span>
+
     </div>
 
 
@@ -164,25 +571,57 @@
             <div class="transaction-main">
 
                 <div class="transaction-icon">
-                    {% if transaction.transaction_type in ["sale", "sale_payment", "other_income", "partner_contribution", "partner_advance", "partner_repayment"] %}
-                    +
-                    {% elif transaction.transaction_type in ["expense", "purchase", "withdrawal", "partner_withdrawal", "partner_draw", "partner_settlement"] %}
-                    −
+
+                    {% if transaction.transaction_type in [
+                        "sale",
+                        "sale_payment",
+                        "other_income",
+                        "partner_contribution",
+                        "partner_advance",
+                        "partner_repayment"
+                    ] %}
+
+                        +
+
+                    {% elif transaction.transaction_type in [
+                        "expense",
+                        "purchase",
+                        "withdrawal",
+                        "partner_withdrawal",
+                        "partner_draw",
+                        "partner_settlement",
+                        "supplier_order_cost",
+                        "opening_reclassification"
+                    ] %}
+
+                        −
+
                     {% elif transaction.transaction_type == "transfer" %}
-                    ↔
+
+                        ↔
+
                     {% else %}
-                    •
+
+                        •
+
                     {% endif %}
+
                 </div>
 
+
                 <div>
+
                     <strong>
-                        {{ transaction.description or transaction.transaction_type|replace("_", " ")|title }}
+                        {{ transaction.description or
+                           transaction.transaction_type|replace("_", " ")|title }}
                     </strong>
 
                     <span>
-                        {{ transaction.transaction_date.strftime("%d %b %Y · %H:%M") }}
+                        {{ transaction.transaction_date.strftime(
+                            "%d %b %Y · %H:%M"
+                        ) }}
                     </span>
+
                 </div>
 
             </div>
@@ -197,9 +636,9 @@
             ">
 
                 {% if transaction.to_account_id and not transaction.from_account_id %}
-                +
+                    +
                 {% elif transaction.from_account_id and not transaction.to_account_id %}
-                −
+                    −
                 {% endif %}
 
                 R{{ "%.2f"|format(transaction.amount) }}
@@ -212,54 +651,80 @@
 
     </div>
 
+
     {% else %}
 
     <div class="empty-ledger">
-        <strong>No money movement recorded yet.</strong>
+
+        <strong>
+            No money movement recorded yet.
+        </strong>
+
         <span>
             Sales, purchases, expenses, partner money and transfers
             will automatically appear here.
         </span>
+
     </div>
 
     {% endif %}
 
 </section>
 
+
 <!-- ======================================================
      TRANSFER MONEY MODAL
      ====================================================== -->
 
-<div class="tdm-modal" id="transferModal">
+<div
+    class="tdm-modal"
+    id="transferModal"
+>
 
-    <div class="tdm-modal-backdrop" onclick="closeTransferModal()">
-    </div>
+    <div
+        class="tdm-modal-backdrop"
+        onclick="closeTransferModal()"
+    ></div>
+
 
     <div class="tdm-modal-card">
 
         <div class="tdm-modal-header">
 
             <div>
+
                 <span class="modal-eyebrow">
                     INTERNAL MONEY MOVEMENT
                 </span>
 
-                <h3>Transfer Money</h3>
+                <h3>
+                    Transfer Money
+                </h3>
 
                 <p>
                     Move TYDAL money between locations without
                     recording new income or an expense.
                 </p>
+
             </div>
 
-            <button class="modal-close" type="button" onclick="closeTransferModal()" aria-label="Close">
+
+            <button
+                class="modal-close"
+                type="button"
+                onclick="closeTransferModal()"
+                aria-label="Close"
+            >
                 ×
             </button>
 
         </div>
 
 
-        <form method="POST" action="{{ url_for('money.transfer') }}">
+        <form
+            method="POST"
+            action="{{ url_for('money.transfer') }}"
+        >
 
             <div class="form-group">
 
@@ -267,7 +732,11 @@
                     From
                 </label>
 
-                <select name="from_account_id" id="fromAccount" required>
+                <select
+                    name="from_account_id"
+                    id="fromAccount"
+                    required
+                >
 
                     <option value="">
                         Choose money location
@@ -275,7 +744,10 @@
 
                     {% for row in account_rows %}
 
-                    <option value="{{ row.account.id }}" data-balance="{{ row.balance }}">
+                    <option
+                        value="{{ row.account.id }}"
+                        data-balance="{{ row.balance }}"
+                    >
                         {{ row.account.name }}
                         — R{{ "%.2f"|format(row.balance) }}
                     </option>
@@ -283,6 +755,7 @@
                     {% endfor %}
 
                 </select>
+
 
                 <small id="availableBalance">
                     Select a location to see its available balance.
@@ -302,7 +775,11 @@
                     To
                 </label>
 
-                <select name="to_account_id" id="toAccount" required>
+                <select
+                    name="to_account_id"
+                    id="toAccount"
+                    required
+                >
 
                     <option value="">
                         Choose destination
@@ -331,8 +808,15 @@
 
                     <span>R</span>
 
-                    <input type="number" name="amount" id="transferAmount" min="0.01" step="0.01" placeholder="0.00"
-                        required>
+                    <input
+                        type="number"
+                        name="amount"
+                        id="transferAmount"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="0.00"
+                        required
+                    >
 
                 </div>
 
@@ -342,14 +826,22 @@
             <div class="form-group">
 
                 <label for="transferDescription">
+
                     Description
+
                     <span class="optional-label">
                         Optional
                     </span>
+
                 </label>
 
-                <input type="text" name="description" id="transferDescription" maxlength="255"
-                    placeholder="e.g. Cash deposited into Capitec">
+                <input
+                    type="text"
+                    name="description"
+                    id="transferDescription"
+                    maxlength="255"
+                    placeholder="e.g. Cash deposited into Capitec"
+                >
 
             </div>
 
@@ -357,21 +849,30 @@
             <div class="form-group">
 
                 <label for="transferNotes">
+
                     Notes
+
                     <span class="optional-label">
                         Optional
                     </span>
+
                 </label>
 
-                <textarea name="notes" id="transferNotes" rows="3"
-                    placeholder="Anything the partners should know about this transfer"></textarea>
+                <textarea
+                    name="notes"
+                    id="transferNotes"
+                    rows="3"
+                    placeholder="Anything the partners should know about this transfer"
+                ></textarea>
 
             </div>
 
 
             <div class="transfer-info">
 
-                <strong>This does not change TYDAL's total money.</strong>
+                <strong>
+                    This does not change TYDAL's total money.
+                </strong>
 
                 <span>
                     It only changes where the business money is held.
@@ -382,11 +883,18 @@
 
             <div class="modal-actions">
 
-                <button type="button" class="secondary-button" onclick="closeTransferModal()">
+                <button
+                    type="button"
+                    class="secondary-button"
+                    onclick="closeTransferModal()"
+                >
                     Cancel
                 </button>
 
-                <button type="submit" class="primary-button">
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
                     Record Transfer
                 </button>
 
@@ -397,6 +905,7 @@
     </div>
 
 </div>
+
 
 <script>
 
@@ -412,12 +921,19 @@
     const availableBalance =
         document.getElementById("availableBalance");
 
+    const correctionAccount =
+        document.getElementById("correctionAccount");
+
+    const correctionBalance =
+        document.getElementById("correctionBalance");
+
 
     function openTransferModal() {
 
         transferModal.classList.add("open");
 
         document.body.classList.add("modal-open");
+
     }
 
 
@@ -426,75 +942,99 @@
         transferModal.classList.remove("open");
 
         document.body.classList.remove("modal-open");
+
     }
 
 
     if (fromAccount) {
 
-        fromAccount.addEventListener("change", function () {
+        fromAccount.addEventListener(
+            "change",
+            function () {
 
-            const selected =
-                this.options[this.selectedIndex];
+                const selected =
+                    this.options[this.selectedIndex];
 
-            const balance =
-                selected.dataset.balance;
+                const balance =
+                    selected.dataset.balance;
 
-            if (balance !== undefined) {
 
-                availableBalance.textContent =
-                    `Available: R${Number(balance).toFixed(2)}`;
+                if (balance !== undefined) {
 
-            } else {
+                    availableBalance.textContent =
+                        `Available: R${Number(balance).toFixed(2)}`;
 
-                availableBalance.textContent =
-                    "Select a location to see its available balance.";
+                } else {
+
+                    availableBalance.textContent =
+                        "Select a location to see its available balance.";
+
+                }
+
+
+                Array.from(
+                    toAccount.options
+                ).forEach(option => {
+
+                    option.disabled =
+                        option.value &&
+                        option.value === this.value;
+
+                });
 
             }
-
-
-            /*
-             Prevent choosing the same account as destination.
-            */
-
-            Array.from(toAccount.options).forEach(option => {
-
-                option.disabled =
-                    option.value &&
-                    option.value === this.value;
-
-            });
-
-        });
+        );
 
     }
 
 
-    document.addEventListener("keydown", function (event) {
+    if (correctionAccount) {
 
-        if (
-            event.key === "Escape" &&
-            transferModal.classList.contains("open")
-        ) {
+        correctionAccount.addEventListener(
+            "change",
+            function () {
 
-            closeTransferModal();
+                const selected =
+                    this.options[this.selectedIndex];
+
+                const balance =
+                    selected.dataset.balance;
+
+
+                if (balance !== undefined) {
+
+                    correctionBalance.textContent =
+                        `Available at this location: R${Number(balance).toFixed(2)}`;
+
+                } else {
+
+                    correctionBalance.textContent =
+                        "Select the location containing the incorrectly classified money.";
+
+                }
+
+            }
+        );
+
+    }
+
+
+    document.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (
+                event.key === "Escape" &&
+                transferModal.classList.contains("open")
+            ) {
+
+                closeTransferModal();
+
+            }
 
         }
-
-    });
+    );
 
 </script>
-
-
-<section class="money-section">
-  <div class="section-heading"><div><h3>Other money in</h3><p>Debt recoveries and other TYDAL cash receipts that are not product sales.</p></div></div>
-  <form method="POST" action="{{ url_for('money.record_income') }}" class="sale-form-card">
-    <div class="form-row"><div class="form-group"><label>Type</label><select name="income_type"><option value="historical_debt_recovery">Historical debt recovery</option><option value="other_income">Other income</option><option value="refund">Refund received</option></select></div>
-    <div class="form-group"><label>Amount</label><input name="amount" type="number" min="0.01" step="0.01" required></div></div>
-    <div class="form-group"><label>Put money in</label><select name="money_account_id" required>{% for account in accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></div>
-    <div class="form-group"><label>Description</label><input name="description" required placeholder="e.g. Old TYDAL debt repaid"></div>
-    <div class="form-group"><label>Notes</label><textarea name="notes" rows="2" placeholder="Explain where the old debt came from"></textarea></div>
-    <button class="primary-button" type="submit">+ Record Money In</button>
-  </form>
-</section>
 
 {% endblock %}
