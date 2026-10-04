@@ -83,3 +83,184 @@
 
                 <small>
                     Cost of the goods before duties, shipping
+                    and other landed costs.
+                </small>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="orderDate">
+                    Order Date
+                </label>
+
+                <input
+                    type="datetime-local"
+                    id="orderDate"
+                    name="order_date"
+                >
+
+                <small>
+                    Leave blank to use the current date and time.
+                </small>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         ACCOUNTING BEHAVIOUR
+         ================================================== -->
+
+    <section class="form-card">
+
+        <div class="section-heading">
+
+            <div>
+                <h3>Accounting</h3>
+
+                <p>
+                    Tell TDM whether this order happened before
+                    the current records started.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label class="checkbox-row">
+
+                <input
+                    type="checkbox"
+                    name="is_historical"
+                    id="isHistorical"
+                >
+
+                <span>
+                    <strong>Historical order</strong><br>
+                    <small>
+                        The goods were already paid for before
+                        TDM's current opening money snapshot.
+                    </small>
+                </span>
+
+            </label>
+
+        </div>
+
+
+        <div class="info-card">
+
+            <strong>No money will move yet.</strong>
+
+            <p>
+                Creating this order records the supplier commitment
+                and goods cost only. It does not deduct TYDAL money
+                and it does not increase available stock.
+            </p>
+
+            <p>
+                Customs, duties, shipping and other landed costs
+                can be attached to the order afterwards.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         NOTES
+         ================================================== -->
+
+    <section class="form-card">
+
+        <div class="form-group">
+
+            <label for="orderNotes">
+                Notes
+            </label>
+
+            <textarea
+                id="orderNotes"
+                name="notes"
+                rows="4"
+                placeholder="Supplier reference, parcel information, payment history..."
+            ></textarea>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         SUMMARY / SUBMIT
+         ================================================== -->
+
+    <div class="purchase-checkout">
+
+        <div>
+
+            <span>Goods Cost</span>
+
+            <strong id="orderTotal">
+                R0.00
+            </strong>
+
+            <small>
+                Inventory remains unchanged until this order
+                is received.
+            </small>
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="primary-button purchase-submit"
+        >
+            Create In-Transit Order
+        </button>
+
+    </div>
+
+</form>
+
+
+<script>
+
+    const goodsCost =
+        document.getElementById("goodsCost");
+
+    const orderTotal =
+        document.getElementById("orderTotal");
+
+
+    function updateOrderTotal() {
+
+        const value =
+            parseFloat(goodsCost.value || 0);
+
+        orderTotal.textContent =
+            "R" + value.toFixed(2);
+
+    }
+
+
+    goodsCost.addEventListener(
+        "input",
+        updateOrderTotal
+    );
+
+
+    updateOrderTotal();
+
+</script>
+
+{% endblock %}
