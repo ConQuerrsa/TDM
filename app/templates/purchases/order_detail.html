@@ -1,0 +1,705 @@
+{% extends "base.html" %}
+
+{% block title %}{{ supplier_order.order_number }} | TDM{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>{{ supplier_order.order_number }}</h1>
+
+        <p>
+            {{ supplier_order.supplier }} ·
+            {{ supplier_order.status|replace('_', ' ')|title }}
+        </p>
+    </div>
+
+    <a href="{{ url_for('purchases.index') }}" class="secondary-button">
+        ← Purchases
+    </a>
+
+</div>
+
+
+<!-- ======================================================
+     ORDER SUMMARY
+     ====================================================== -->
+
+<section class="form-card">
+
+    <div class="section-heading">
+
+        <div>
+            <h3>Supplier Order</h3>
+
+            <p>
+                Track the full cost of this order before
+                the stock becomes available.
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+
+            <span>Goods Cost</span>
+
+            <strong>
+                R{{ "%.2f"|format(supplier_order.goods_cost) }}
+            </strong>
+
+            <small>
+                Supplier goods only
+            </small>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <span>Extra Landed Costs</span>
+
+            <strong>
+                R{{ "%.2f"|format(supplier_order.extra_cost_total) }}
+            </strong>
+
+            <small>
+                Duties, shipping and related costs
+            </small>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <span>Total Landed Cost</span>
+
+            <strong>
+                R{{ "%.2f"|format(supplier_order.landed_cost) }}
+            </strong>
+
+            <small>
+                Goods + all additional costs
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="form-grid">
+
+        <div class="form-group">
+
+            <label>Supplier</label>
+
+            <strong>
+                {{ supplier_order.supplier }}
+            </strong>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>Order Date</label>
+
+            <strong>
+                {{ supplier_order.order_date.strftime('%d %b %Y %H:%M') }}
+            </strong>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>Status</label>
+
+            <strong>
+                {{ supplier_order.status|replace('_', ' ')|title }}
+            </strong>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>Record Type</label>
+
+            <strong>
+                {% if supplier_order.is_historical %}
+                    Historical
+                {% else %}
+                    Current
+                {% endif %}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    {% if supplier_order.notes %}
+
+    <div class="info-card">
+
+        <strong>Order Notes</strong>
+
+        <p>
+            {{ supplier_order.notes }}
+        </p>
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+<!-- ======================================================
+     LANDED COST HISTORY
+     ====================================================== -->
+
+<section class="form-card">
+
+    <div class="section-heading">
+
+        <div>
+            <h3>Landed Costs</h3>
+
+            <p>
+                Additional costs attached to this supplier order.
+            </p>
+        </div>
+
+    </div>
+
+
+    {% if supplier_order.costs %}
+
+        <div class="activity-list">
+
+            {% for cost in supplier_order.costs %}
+
+            <div class="activity-item">
+
+                <div>
+
+                    <strong>
+                        {{ cost.description }}
+                    </strong>
+
+                    <p>
+                        {{ cost.cost_type|replace('_', ' ')|title }}
+                        ·
+                        {{ cost.cost_date.strftime('%d %b %Y %H:%M') }}
+                    </p>
+
+                    <small>
+
+                        {% if cost.funding_type == "tydal_money" %}
+
+                            Paid using TYDAL money
+
+                            {% if cost.money_account %}
+                                · {{ cost.money_account.name }}
+                            {% endif %}
+
+                        {% elif cost.funding_type == "partner_personal" %}
+
+                            Paid personally
+
+                            {% if cost.partner %}
+                                · {{ cost.partner.full_name }}
+                            {% endif %}
+
+                        {% endif %}
+
+                    </small>
+
+
+                    {% if cost.notes %}
+
+                    <small>
+                        {{ cost.notes }}
+                    </small>
+
+                    {% endif %}
+
+                </div>
+
+
+                <strong>
+                    R{{ "%.2f"|format(cost.amount) }}
+                </strong>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <h3>No landed costs yet</h3>
+
+            <p>
+                Add customs duties, shipping, clearing charges
+                or other costs below.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</section>
+
+
+<!-- ======================================================
+     ADD LANDED COST
+     ====================================================== -->
+
+{% if supplier_order.status != "received" %}
+
+<form
+    method="POST"
+    action="{{ url_for(
+        'purchases.add_supplier_order_cost',
+        order_id=supplier_order.id
+    ) }}"
+    class="purchase-form"
+    id="landedCostForm"
+>
+
+    <section class="form-card">
+
+        <div class="section-heading">
+
+            <div>
+                <h3>Add Landed Cost</h3>
+
+                <p>
+                    Record a cost connected to getting this
+                    order ready for sale.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="costType">
+                    Cost Type
+                </label>
+
+                <select
+                    id="costType"
+                    name="cost_type"
+                    required
+                >
+
+                    <option value="">
+                        Choose cost type
+                    </option>
+
+                    <option value="customs_duties">
+                        Customs / Import Duties
+                    </option>
+
+                    <option value="shipping">
+                        Shipping
+                    </option>
+
+                    <option value="clearing">
+                        Clearing Charges
+                    </option>
+
+                    <option value="delivery">
+                        Delivery / Transport
+                    </option>
+
+                    <option value="other">
+                        Other Landed Cost
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="costDescription">
+                    Description
+                </label>
+
+                <input
+                    type="text"
+                    id="costDescription"
+                    name="description"
+                    placeholder="e.g. Customs duties for Alibaba parcel"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="costAmount">
+                    Amount
+                </label>
+
+                <input
+                    type="number"
+                    id="costAmount"
+                    name="amount"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="costDate">
+                    Date
+                </label>
+
+                <input
+                    type="datetime-local"
+                    id="costDate"
+                    name="cost_date"
+                >
+
+                <small>
+                    Leave blank to use the current date and time.
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==============================================
+             FUNDING SOURCE
+             ============================================== -->
+
+        <div class="form-group">
+
+            <label for="fundingType">
+                Who Paid?
+            </label>
+
+            <select
+                id="fundingType"
+                name="funding_type"
+                required
+            >
+
+                <option value="">
+                    Choose funding source
+                </option>
+
+                <option value="tydal_money">
+                    TYDAL Money
+                </option>
+
+                <option value="partner_personal">
+                    Partner Paid Personally
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- ==============================================
+             TYDAL MONEY SOURCE
+             ============================================== -->
+
+        <div
+            id="tydalFundingFields"
+            class="form-group"
+            hidden
+        >
+
+            <label for="moneyAccount">
+                TYDAL Money Location
+            </label>
+
+            <select
+                id="moneyAccount"
+                name="money_account_id"
+            >
+
+                <option value="">
+                    Choose money location
+                </option>
+
+                {% for row in account_rows %}
+
+                <option value="{{ row.account.id }}">
+                    {{ row.account.name }}
+                    — R{{ "%.2f"|format(row.balance) }}
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+            <small>
+                This amount will leave the selected TYDAL
+                money location.
+            </small>
+
+        </div>
+
+
+        <!-- ==============================================
+             PARTNER PERSONAL SOURCE
+             ============================================== -->
+
+        <div
+            id="partnerFundingFields"
+            class="form-group"
+            hidden
+        >
+
+            <label for="partner">
+                Partner Who Paid
+            </label>
+
+            <select
+                id="partner"
+                name="partner_id"
+            >
+
+                <option value="">
+                    Choose partner
+                </option>
+
+                {% for partner in partners %}
+
+                <option value="{{ partner.id }}">
+                    {{ partner.full_name }}
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+            <small>
+                No TYDAL money account will be reduced.
+                The payment will be recognised in this
+                partner's position.
+            </small>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="costNotes">
+                Notes
+            </label>
+
+            <textarea
+                id="costNotes"
+                name="notes"
+                rows="3"
+                placeholder="Optional details about this cost..."
+            ></textarea>
+
+        </div>
+
+
+        <div class="info-card">
+
+            <strong>
+                Landed-cost accounting
+            </strong>
+
+            <p>
+                This cost becomes part of what the stock
+                actually cost TYDAL to bring in. It is not
+                treated as an ordinary operating expense.
+            </p>
+
+        </div>
+
+
+        <div class="purchase-checkout">
+
+            <div>
+
+                <span>Cost Being Added</span>
+
+                <strong id="costPreview">
+                    R0.00
+                </strong>
+
+                <small>
+                    Added to this order's landed cost.
+                </small>
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="primary-button purchase-submit"
+            >
+                Add Landed Cost
+            </button>
+
+        </div>
+
+    </section>
+
+</form>
+
+{% else %}
+
+<section class="form-card">
+
+    <div class="info-card">
+
+        <strong>
+            Order received
+        </strong>
+
+        <p>
+            Landed costs are locked because this order
+            has already been received into inventory.
+        </p>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+
+<script>
+
+    const fundingType =
+        document.getElementById("fundingType");
+
+    const tydalFields =
+        document.getElementById("tydalFundingFields");
+
+    const partnerFields =
+        document.getElementById("partnerFundingFields");
+
+    const moneyAccount =
+        document.getElementById("moneyAccount");
+
+    const partner =
+        document.getElementById("partner");
+
+    const costAmount =
+        document.getElementById("costAmount");
+
+    const costPreview =
+        document.getElementById("costPreview");
+
+
+    function updateFundingFields() {
+
+        if (!fundingType) {
+            return;
+        }
+
+        const funding =
+            fundingType.value;
+
+
+        if (funding === "tydal_money") {
+
+            tydalFields.hidden = false;
+            partnerFields.hidden = true;
+
+            moneyAccount.required = true;
+            partner.required = false;
+
+            partner.value = "";
+
+        } else if (
+            funding === "partner_personal"
+        ) {
+
+            tydalFields.hidden = true;
+            partnerFields.hidden = false;
+
+            moneyAccount.required = false;
+            partner.required = true;
+
+            moneyAccount.value = "";
+
+        } else {
+
+            tydalFields.hidden = true;
+            partnerFields.hidden = true;
+
+            moneyAccount.required = false;
+            partner.required = false;
+
+        }
+
+    }
+
+
+    function updateCostPreview() {
+
+        if (!costAmount || !costPreview) {
+            return;
+        }
+
+        const amount =
+            parseFloat(costAmount.value || 0);
+
+        costPreview.textContent =
+            "R" + amount.toFixed(2);
+
+    }
+
+
+    if (fundingType) {
+
+        fundingType.addEventListener(
+            "change",
+            updateFundingFields
+        );
+
+        updateFundingFields();
+
+    }
+
+
+    if (costAmount) {
+
+        costAmount.addEventListener(
+            "input",
+            updateCostPreview
+        );
+
+        updateCostPreview();
+
+    }
+
+</script>
+
+{% endblock %}
