@@ -1341,6 +1341,6 @@ def reclassify_opening_money():
         "success"
     )
 
-        return redirect(
+    return redirect(
             request.referrer or url_for("purchases.index")
         )
