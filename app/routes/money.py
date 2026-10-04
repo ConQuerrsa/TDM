@@ -11,7 +11,7 @@ from flask import (
 from flask_login import login_required, current_user
 
 from app import db
-from app.models import MoneyAccount, FinancialTransaction
+from app.models import MoneyAccount, FinancialTransaction, User
 
 
 money = Blueprint(
@@ -91,14 +91,21 @@ def index():
         .limit(15)
         .all()
     )
+        partners = (
+        User.query
+        .filter(User.is_active.is_(True))
+        .order_by(User.full_name.asc())
+        .all()
+        )
 
     return render_template(
         "money/index.html",
         account_rows=account_rows,
         accounts=accounts,
+        partners=partners,
         total_business_money=total_business_money,
         recent_transactions=recent_transactions
-    )
+        )
 
 
 # ============================================================
