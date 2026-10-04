@@ -91,7 +91,7 @@ def index():
         .limit(15)
         .all()
     )
-        partners = (
+    partners = (
         User.query
         .filter(User.is_active.is_(True))
         .order_by(User.full_name.asc())
