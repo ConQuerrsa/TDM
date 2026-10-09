@@ -10,6 +10,9 @@ from flask import (
     flash
 )
 from flask_login import login_required, current_user
+from flask_wtf import FlaskForm
+from app.services.supplier_orders import (lock_order, reverse_cost, receive_order,
+    partner_matches, SupplierError)
 
 from app import db
 from app.models import (
@@ -49,7 +52,7 @@ def parse_amount(value):
     except (InvalidOperation, TypeError, ValueError):
         return None
 
-    return amount
+    return amount if amount.is_finite() else None
 
 
 def parse_datetime_local(value):
@@ -166,7 +169,7 @@ def index():
         (
             money(purchase.total_amount)
             for purchase in purchases_list
-            if purchase.status == "completed"
+            if purchase.status == "completed" and purchase.supplier_receipt is None
         ),
         Decimal("0.00")
     )
@@ -797,7 +800,8 @@ def supplier_order_detail(order_id):
         "purchases/order_detail.html",
         supplier_order=supplier_order,
         account_rows=account_rows,
-        partners=partners
+        partners=partners,
+        supplier_form=FlaskForm()
     )
 
 
@@ -811,6 +815,9 @@ def supplier_order_detail(order_id):
 )
 @login_required
 def add_supplier_order_cost(order_id):
+
+    if not FlaskForm().validate_on_submit():
+        return "Invalid or expired form. Reload the order.", 400
 
     supplier_order = db.get_or_404(
         SupplierOrder,
@@ -1019,6 +1026,10 @@ def add_supplier_order_cost(order_id):
 
     try:
 
+        supplier_order = lock_order(order_id)
+        if funding_type == "tydal_money" and amount > get_account_balance(money_account.id):
+            raise SupplierError("The money balance changed. Reload before adding this cost.")
+
         order_cost = SupplierOrderCost(
             supplier_order_id=supplier_order.id,
             cost_type=cost_type,
@@ -1099,6 +1110,10 @@ def add_supplier_order_cost(order_id):
                 partner_transaction
             )
 
+        if funding_type == "partner_personal":
+            db.session.flush()
+            order_cost.partner_transaction_id = partner_transaction.id
+
         db.session.commit()
 
     except Exception:
@@ -1141,3 +1156,73 @@ def add_supplier_order_cost(order_id):
             order_id=order_id
         )
     )
+
+
+@purchases.route('/orders/<int:order_id>/cost/<int:cost_id>/reverse', methods=['GET', 'POST'])
+@login_required
+def reverse_supplier_cost(order_id, cost_id):
+    cost = db.get_or_404(SupplierOrderCost, cost_id)
+    if cost.supplier_order_id != order_id:
+        return 'Cost does not belong to this order.', 404
+    form = FlaskForm()
+    if request.method == 'POST':
+        if not form.validate_on_submit():
+            return 'Invalid or expired form. Reload the correction.', 400
+        try:
+            reverse_cost(order_id, cost_id, current_user.id, request.form.get('reason'),
+                request.form.get('transaction_id'))
+            db.session.commit()
+            flash('Cost reversed. Original records and the correction remain in history.', 'success')
+        except SupplierError as exc:
+            db.session.rollback()
+            flash(str(exc), 'error')
+        except Exception:
+            db.session.rollback()
+            flash('Correction failed. No balances were changed.', 'error')
+        return redirect(url_for('purchases.supplier_order_detail', order_id=order_id))
+    if cost.funding_type == 'partner_personal':
+        matches = partner_matches(cost)
+    else:
+        matches = FinancialTransaction.query.filter_by(source_type='supplier_order_cost',
+            source_id=cost.id, amount=cost.amount, from_account_id=cost.money_account_id,
+            to_account_id=None, reversal_of_id=None).all()
+    return render_template('purchases/cost_reverse.html', cost=cost, matches=matches, form=form)
+
+
+@purchases.route('/orders/<int:order_id>/receive', methods=['GET', 'POST'])
+@login_required
+def receive_supplier_order(order_id):
+    order = db.get_or_404(SupplierOrder, order_id)
+    form = FlaskForm()
+    if request.method == 'POST':
+        if not form.validate_on_submit():
+            return 'Invalid or expired form. Reload the receipt.', 400
+        fields = ['product_id', 'quantity', 'location_id', 'goods_total',
+            'name', 'brand', 'category', 'size', 'color', 'selling_price']
+        values = {field: request.form.getlist(field) for field in fields}
+        count = len(values['product_id'])
+        try:
+            if not count or any(len(items) != count for items in values.values()):
+                raise SupplierError('Received product information is incomplete.')
+            lines = [{field: values[field][i] for field in fields} for i in range(count)]
+            receive_order(order_id, current_user.id, lines)
+            db.session.commit()
+            flash('Order received into inventory. Existing payments were unchanged.', 'success')
+            return redirect(url_for('purchases.supplier_order_detail', order_id=order_id))
+        except SupplierError as exc:
+            db.session.rollback()
+            flash(str(exc), 'error')
+        except Exception:
+            db.session.rollback()
+            flash('Receipt failed. No stock or balances were changed.', 'error')
+        return render_template('purchases/order_receive.html', supplier_order=order, form=form,
+            products=Product.query.filter_by(is_active=True).order_by(Product.name).all(),
+            locations=StockLocation.query.filter_by(is_active=True).order_by(StockLocation.name).all(),
+            submitted_lines=[{field: values[field][i] if i < len(values[field]) else '' for field in fields}
+                for i in range(min(count, 200))]), 400
+    if order.status != 'in_transit':
+        flash('Only an in-transit order can be received.', 'error')
+        return redirect(url_for('purchases.supplier_order_detail', order_id=order_id))
+    return render_template('purchases/order_receive.html', supplier_order=order, form=form,
+        products=Product.query.filter_by(is_active=True).order_by(Product.name).all(),
+        locations=StockLocation.query.filter_by(is_active=True).order_by(StockLocation.name).all())

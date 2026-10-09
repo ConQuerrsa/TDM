@@ -1,0 +1,22 @@
+﻿{% extends 'base.html' %}
+{% block title %}Review cost correction | TDM{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Review cost correction</h1></div>
+<section class="form-card">
+<p>{{ cost.order.order_number }} · Cost #{{ cost.id }} · {{ cost.description }}</p>
+<p>R{{ '%.2f'|format(cost.amount) }} · {{ cost.funding_type|replace('_',' ') }} · {{ cost.partner.name if cost.partner else cost.money_account.name if cost.money_account else '' }}</p>
+<p>{{ cost.cost_date.strftime('%d %b %Y %H:%M:%S') }} · {{ cost.notes or '' }}</p>
+{% if cost.reversal %}<p>This cost has already been reversed: {{ cost.reversal.reason }}</p>
+{% elif cost.order.status != 'in_transit' %}<p>Costs are locked after receipt.</p>
+{% elif matches|length == 1 %}
+<p>Matched original transaction #{{ matches[0].id }}: {{ matches[0].description }} · R{{ '%.2f'|format(matches[0].amount) }}</p>
+<p>Confirm that both records represent the erroneous payment. Reversal excludes this cost from landed cost and offsets its linked funding. Original records remain visible.</p>
+<form method="post">{{ form.hidden_tag() }}
+<input type="hidden" name="transaction_id" value="{{ matches[0].id }}">
+<div class="form-group"><label for="reason">Correction reason</label><textarea id="reason" name="reason" required></textarea></div>
+<button class="primary-button" type="submit">Reverse this cost and funding</button>
+</form>
+{% else %}<p>A unique original accounting entry could not be established. Investigate the records before correcting this cost.</p>{% endif %}
+<a class="secondary-button" href="{{ url_for('purchases.supplier_order_detail', order_id=cost.order.id) }}">Back to order</a>
+</section>
+{% endblock %}

@@ -1,0 +1,40 @@
+﻿{% extends 'base.html' %}
+{% block title %}Receive {{ supplier_order.order_number }} | TDM{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Receive Order</h1><a class="secondary-button" href="{{ url_for('purchases.supplier_order_detail', order_id=supplier_order.id) }}">Back to order</a></div>
+<section class="form-card">
+<p>{{ supplier_order.order_number }} · {{ supplier_order.supplier }}</p>
+<p>Goods: R{{ '%.2f'|format(supplier_order.goods_cost) }} · Total landed cost: R{{ '%.2f'|format(supplier_order.landed_cost) }}</p>
+<p>Enter the actual received lines and the goods cost for each whole line. Goods totals must equal the order goods cost. Landed cost is allocated proportionally. Previously recorded payments remain unchanged.</p>
+<form method="post">{{ form.hidden_tag() }}
+<div id="received-lines">
+{% for line in submitted_lines|default([{}], true) %}
+<fieldset class="form-card received-line"><legend>Received line</legend><div class="form-grid">
+<div class="form-group"><label>Product / variant</label><select name="product_id" required><option value="">Choose product</option><option value="__new__" {% if line.get('product_id') == '__new__' %}selected{% endif %}>New product / variant</option>{% for product in products %}<option value="{{ product.id }}" {% if line.get('product_id') == product.id|string %}selected{% endif %}>{{ product.name }} · {{ product.brand or '' }} · {{ product.size or '' }} · {{ product.color or '' }}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Stock location / holding partner</label><select name="location_id" required><option value="">Choose location</option>{% for location in locations %}<option value="{{ location.id }}" {% if line.get('location_id') == location.id|string %}selected{% endif %}>{{ location.name }}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Quantity</label><input name="quantity" type="number" min="1" max="1000000" step="1" value="{{ line.get('quantity','') }}" required></div>
+<div class="form-group"><label>Goods cost for this whole line (R)</label><input name="goods_total" type="number" min="0.01" step="0.01" value="{{ line.get('goods_total','') }}" required></div>
+</div><p>For a new product / variant:</p><div class="form-grid">
+{% for key,label,limit in [('name','Product family',150),('brand','Brand',100),('category','Category',100),('size','Size',50),('color','Colour',50)] %}
+<div class="form-group"><label>{{ label }}</label><input name="{{ key }}" maxlength="{{ limit }}" value="{{ line.get(key,'') }}"></div>
+{% endfor %}
+<div class="form-group"><label>Selling price (R)</label><input name="selling_price" type="number" min="0" step="0.01" value="{{ line.get('selling_price','0') }}"></div>
+</div><button class="secondary-button remove-line" type="button">Remove line</button></fieldset>
+{% endfor %}
+</div>
+<button class="secondary-button" id="add-line" type="button">Add received line</button>
+<button class="primary-button" type="submit">Confirm receipt</button>
+</form></section>
+<script>
+const lines = document.getElementById('received-lines');
+const prototype = lines.firstElementChild.cloneNode(true);
+document.getElementById('add-line').addEventListener('click', () => {
+    const line = prototype.cloneNode(true);
+    line.querySelectorAll('input,select').forEach(input => input.value = input.name === 'selling_price' ? '0' : '');
+    lines.appendChild(line);
+});
+lines.addEventListener('click', event => {
+    if (event.target.classList.contains('remove-line') && lines.children.length > 1) event.target.closest('fieldset').remove();
+});
+</script>
+{% endblock %}

@@ -26,6 +26,19 @@
      ORDER SUMMARY
      ====================================================== -->
 
+{% if supplier_order.status == 'in_transit' %}
+<a class="primary-button" href="{{ url_for('purchases.receive_supplier_order', order_id=supplier_order.id) }}">Receive Order</a>
+{% elif supplier_order.receipt %}
+<section class="form-card">
+<h3>Received items</h3>
+<p>{{ supplier_order.receipt.received_at.strftime('%d %b %Y %H:%M') }} · Allocated landed cost R{{ '%.2f'|format(supplier_order.receipt.purchase.total_amount) }}</p>
+<table><thead><tr><th>Product / variant</th><th>Quantity</th><th>Unit cost</th><th>Allocated cost</th></tr></thead><tbody>
+{% for item in supplier_order.receipt.purchase.items %}
+<tr><td>{{ item.product.name }} {{ item.product.brand or '' }} {{ item.product.size or '' }} {{ item.product.color or '' }}</td><td>{{ item.quantity }}</td><td>R{{ '%.2f'|format(item.unit_cost) }}</td><td>R{{ '%.2f'|format(item.line_total) }}</td></tr>
+{% endfor %}</tbody></table>
+<p>Line totals retain the exact allocation; unit costs are rounded to cents. Stock locations are recorded in inventory movement history.</p>
+</section>
+{% endif %}
 <section class="form-card">
 
     <div class="section-heading">
@@ -191,6 +204,11 @@
 
                 <strong>
                     {{ cost.description }}
+                    {% if cost.reversal %}
+                    <small>Reversed {{ cost.reversal.created_at.strftime('%d %b %Y %H:%M') }} · {{ cost.reversal.reason }}</small>
+                    {% elif supplier_order.status == 'in_transit' %}
+                    <a href="{{ url_for('purchases.reverse_supplier_cost', order_id=supplier_order.id, cost_id=cost.id) }}">Review correction</a>
+                    {% endif %}
                 </strong>
 
                 <p>
@@ -271,6 +289,7 @@
         'purchases.add_supplier_order_cost',
         order_id=supplier_order.id
     ) }}" class="purchase-form" id="landedCostForm">
+    {{ supplier_form.hidden_tag() }}
 
     <section class="form-card">
 

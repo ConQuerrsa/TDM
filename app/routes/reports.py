@@ -72,7 +72,7 @@ def index():
     )
 
     purchase_spend = sum(
-        (to_decimal(purchase.total_amount) for purchase in purchases),
+        (to_decimal(purchase.total_amount) for purchase in purchases if purchase.supplier_receipt is None),
         Decimal("0.00")
     )
 

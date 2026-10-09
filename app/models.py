@@ -1057,7 +1057,7 @@ class SupplierOrder(db.Model):
         return sum(
             (
                 Decimal(str(cost.amount or 0))
-                for cost in self.costs
+                for cost in self.costs if cost.reversal is None
             ),
             Decimal("0.00")
         )
@@ -1097,6 +1097,8 @@ class SupplierOrderCost(db.Model):
         nullable=False,
         index=True
     )
+
+    partner_transaction_id = db.Column(db.Integer, db.ForeignKey("partner_transactions.id"), nullable=True, unique=True)
 
     cost_type = db.Column(
         db.String(50),
@@ -1441,3 +1443,28 @@ class OtherIncome(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     money_account = db.relationship("MoneyAccount")
     recorded_by = db.relationship("User")
+
+
+class SupplierCostReversal(db.Model):
+    """Voids a cost without deleting its original or using negative cost rows."""
+    __tablename__ = "supplier_cost_reversals"
+    id = db.Column(db.Integer, primary_key=True)
+    cost_id = db.Column(db.Integer, db.ForeignKey("supplier_order_costs.id"), nullable=False, unique=True)
+    original_partner_transaction_id = db.Column(db.Integer, db.ForeignKey("partner_transactions.id"), nullable=True, unique=True)
+    partner_transaction_id = db.Column(db.Integer, db.ForeignKey("partner_transactions.id"), nullable=True, unique=True)
+    financial_transaction_id = db.Column(db.Integer, db.ForeignKey("financial_transactions.id"), nullable=True, unique=True)
+    reason = db.Column(db.Text, nullable=False)
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    cost = db.relationship("SupplierOrderCost", backref=db.backref("reversal", uselist=False))
+
+
+class SupplierOrderReceipt(db.Model):
+    __tablename__ = "supplier_order_receipts"
+    id = db.Column(db.Integer, primary_key=True)
+    supplier_order_id = db.Column(db.Integer, db.ForeignKey("supplier_orders.id"), nullable=False, unique=True)
+    purchase_id = db.Column(db.Integer, db.ForeignKey("purchases.id"), nullable=False, unique=True)
+    received_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    received_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    order = db.relationship("SupplierOrder", backref=db.backref("receipt", uselist=False))
+    purchase = db.relationship("Purchase", backref=db.backref("supplier_receipt", uselist=False))

@@ -9,10 +9,13 @@ login_manager = LoginManager()
 migrate = Migrate()
 
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
 
     app.config.from_object("config.Config")
+
+    if test_config is not None:
+        app.config.update(test_config)
 
     db.init_app(app)
     login_manager.init_app(app)
